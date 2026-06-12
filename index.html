@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center v279</title>
+<title>Tyree Life Command Center v282 perf3</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -324,6 +324,34 @@ let lastSaveAt = null;
 let lastInputUpdatedAt = null;
 let pendingInputUpdate=false;
 let pendingInputUpdateAt=null;
+let inputUpdatedStampCache=0;
+let inputUpdatedStampCacheReady=false;
+let renderFullMigrateLastAt=0;
+let navTabsBuilt=false;
+function renderCacheGet(key,fn){
+  const c=window.__tlccRenderCache;
+  if(c && Object.prototype.hasOwnProperty.call(c,key)) return c[key];
+  const v=fn();
+  if(c) c[key]=v;
+  return v;
+}
+function ensureLightStateForRender(){
+  if(!state||typeof state!=='object') state=loadState();
+  const now=Date.now();
+  // Full migration walks every saved day. Do it on load/import/export, not every tap/render.
+  if(!renderFullMigrateLastAt || now-renderFullMigrateLastAt>15000){
+    state=migrate(state);
+    renderFullMigrateLastAt=now;
+  }else{
+    state.settings=state.settings||{};
+    state.days=state.days||{};
+    state.azure=state.azure||{skills:{},claims:{}};
+    state.adaya=state.adaya||{skills:{},customSkills:[],weekly:{}};
+    const k=todayKey();
+    if(state.days[k]) migrateDay(state.days[k]);
+  }
+  return state;
+}
 const tabs = [
   ['today','Today'],['azure','Azure'],['money','Money'],['father','Father'],['faith','Faith'],['health','Health'],['pattern','Pattern'],['social','Love/Social'],['therapy','Therapy'],['week','Week'],['vision','Vision'],['data','Data']
 ];
@@ -1532,9 +1560,14 @@ function markInputUpdated(iso){
   state._inputUpdatedAt=now;
   state._lastMeaningfulInputAt=now;
   try{
+    const t=new Date(now).getTime();
+    if(t && !Number.isNaN(t)){inputUpdatedStampCache=t; inputUpdatedStampCacheReady=true;}
+  }catch(e){}
+  try{
     const k=todayKey();
     if(state.days && state.days[k]) state.days[k].inputUpdatedAt=now;
   }catch(e){}
+  try{updateSaveStatus();}catch(e){}
 }
 function maybeMarkInputUpdated(ev){
   if(pendingInputUpdate){
@@ -1565,18 +1598,24 @@ function shouldCaptureTodaySnapshotNow(){
   }catch(e){return true;}
 }
 
-function latestInputUpdatedStamp(){
+function latestInputUpdatedStamp(force=false){
+  if(!force && inputUpdatedStampCacheReady) return inputUpdatedStampCache||0;
   const stamps=[];
   try{ if(lastInputUpdatedAt) stamps.push(new Date(lastInputUpdatedAt).getTime()); }catch(e){}
   try{ if(state?._inputUpdatedAt) stamps.push(new Date(state._inputUpdatedAt).getTime()); }catch(e){}
   try{ if(state?.days?.[todayKey()]?.inputUpdatedAt) stamps.push(new Date(state.days[todayKey()].inputUpdatedAt).getTime()); }catch(e){}
-  try{
-    Object.values(state.days||{}).forEach(d=>{
-      if(d?.inputUpdatedAt) stamps.push(new Date(d.inputUpdatedAt).getTime());
-    });
-  }catch(e){}
+  // Slow fallback only runs once after load/import. Normal taps update the cache in markInputUpdated().
+  if(force || !stamps.length){
+    try{
+      Object.values(state.days||{}).forEach(d=>{
+        if(d?.inputUpdatedAt) stamps.push(new Date(d.inputUpdatedAt).getTime());
+      });
+    }catch(e){}
+  }
   const good=stamps.filter(x=>x && !Number.isNaN(x));
-  return good.length ? Math.max(...good) : 0;
+  inputUpdatedStampCache=good.length ? Math.max(...good) : 0;
+  inputUpdatedStampCacheReady=true;
+  return inputUpdatedStampCache;
 }
 
 let saveFlushTimer=null;
@@ -1624,10 +1663,26 @@ function prepStateForSave(skipSnapshot=false){
   }catch(e){}
 }
 function save(skipSnapshot=false){
-  prepStateForSave(skipSnapshot);
+  // Perf3: do not run linked-field sync, expired forecast cleanup, snapshots, or JSON.stringify in the tap path.
+  // Those still run in flushPendingSaveNow(), export/import/pagehide, and guide completion flushes.
+  try{maybeMarkInputUpdated();}catch(e){}
+  state.settings=state.settings||{};
+  state.settings.activeTab=active||'today';
+  state.settings.guideState=guideState?deepClone(guideState):null;
+  if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
+  const now=new Date().toISOString();
+  state._savedAt=now;
+  state._schemaVersion='v282-android-interaction-performance-bugfix';
+  try{
+    const k=todayKey();
+    if(state.days?.[k]){
+      state.days[k]._savedAt=now;
+      state.days[k].lastUpdated=now;
+    }
+  }catch(e){}
   saveDirty=true;
   updateSaveStatus();
-  scheduleSaveFlush(420);
+  scheduleSaveFlush(520);
 }
 function flushPendingSaveNow(reason='manual'){
   try{
@@ -1928,14 +1983,31 @@ function renderGuideStatusBadges(){
   }
 }
 
+function buildTabButtonsOnce(){
+  const t=document.getElementById('tabs'), b=document.getElementById('bottomNav');
+  if(!t||!b) return;
+  if(navTabsBuilt && t.children.length && b.children.length) return;
+  t.innerHTML=''; b.innerHTML='';
+  tabs.forEach(([id,label])=>{
+    [t,b].forEach(root=>{
+      const btn=document.createElement('button');
+      btn.className=(id===active?'tab active':'tab');
+      btn.dataset.tabId=id;
+      btn.textContent=label;
+      btn.onclick=()=>setActiveTab(id);
+      root.appendChild(btn);
+    });
+  });
+  navTabsBuilt=true;
+}
 function nav(){
   document.getElementById('todayPill').textContent = todayLabel(new Date());
   const gb=document.getElementById('timeGuideBtn'); if(gb){const gp=currentGuidePeriod(); gb.textContent=guideState?`${guidePeriodLabel(guideState.period)} Guide On`:`${gp.label} Guide`; gb.className='btn small guidePremium '+(guideState?'guideOn':'');}
   const mb=document.getElementById('missedMorningGuideBtn'); if(mb){const show=missedMorningGuideAvailable(); mb.style.display=show?'':'none'; mb.textContent='AM Catch-up'; mb.className='btn small '+(show?'':'hidden');}   const sb=document.getElementById('smartCheckBtn'); if(sb){const si=smartCheckInAvailable(); sb.style.display=si.visible===false?'none':''; sb.textContent=si.label; sb.title=si.reason; sb.disabled=!si.available; sb.setAttribute('aria-disabled',si.available?'false':'true'); sb.className='btn small '+(si.available?'checkInPremium':'disabled');}
   const qb=document.getElementById('quickModeBtn'); if(qb){qb.textContent=state.settings?.quickMode?'Quick Mode On':'Quick Mode'; qb.title=state.settings?.quickMode?'Quick Mode is on':'Quick Mode'; qb.className='btn small quickCompact '+(state.settings?.quickMode?'quickOn':'');}
   renderGuideStatusBadges();
-  const t=document.getElementById('tabs'), b=document.getElementById('bottomNav'); t.innerHTML=''; b.innerHTML='';
-  tabs.forEach(([id,label])=>{[t,b].forEach(root=>{let btn=document.createElement('button');btn.className=(id===active?'tab active':'tab');btn.dataset.tabId=id;btn.textContent=label;btn.onclick=()=>setActiveTab(id);root.appendChild(btn)})});
+  buildTabButtonsOnce();
+  updateActiveTabClasses();
 }
 function updateActiveTabClasses(){
   try{
@@ -1946,12 +2018,14 @@ function updateActiveTabClasses(){
   }catch(e){}
 }
 function setActiveTab(id){
+  if(!tabs.some(([tabId])=>tabId===id)) return;
+  if(active===id){updateActiveTabClasses(); return;}
   active=id;
   state.settings=state.settings||{};
   state.settings.activeTab=id;
   safeLocalSet('tlcc_active',id);
   updateActiveTabClasses();
-  // Persist the selected tab later; do not block the tap.
+  // Persist the selected tab later; do not block the tap or the active-class paint.
   try{save(true);}catch(e){}
   render();
 }
@@ -2452,15 +2526,15 @@ function render(force=false){
     if(renderQueued) return;
     renderQueued=true;
     const run=()=>{renderQueued=false; renderNow();};
-    if(typeof requestAnimationFrame==='function') requestAnimationFrame(run);
+    // Let Android paint the checkbox/slider/tab/button feedback first, then do heavier DOM work.
+    if(typeof requestAnimationFrame==='function') requestAnimationFrame(()=>setTimeout(run,0));
     else setTimeout(run,0);
   }catch(e){try{renderNow();}catch(err){}}
 }
 function renderNow(){
   try{
     window.__tlccRenderCache={};
-    if(!state||typeof state!=='object') state=loadState();
-    state=migrate(state);
+    ensureLightStateForRender();
     if(!tabs.some(([id])=>id===active)) active='today';
     syncLinkedFieldsForDay();
     // Do not force the active tab during render. The guide can stay on, but manual tab taps must work.
@@ -3214,6 +3288,7 @@ function weekdayPatternConfidence(count){
   return {tier:'stronger',label:'Stronger signal',forecastWeight:.55,usable:true,rule:'8+ matching weekdays: stronger forecast influence'};
 }
 function weekdayPatternLayer(daysBack='all'){
+  return renderCacheGet('weekdayPatternLayer|'+String(daysBack)+'|'+todayKey(),()=>{
   const entries=recentEntries(daysBack).filter(e=>e.data).map(e=>({date:e.date,data:migrateDay(e.data)}));
   const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const boolRate=(rows,fn)=>rows.length?Math.round(rows.filter(fn).length/rows.length*100):0;
@@ -3267,6 +3342,7 @@ function weekdayPatternLayer(daysBack='all'){
     sundayReset:{...groupStats(sundays,'Sunday'),mondayPairs:sundayMondayPairs.length,afterSundayReset:{count:sundayResetPairs.length,mondayEnergy:avg(sundayResetPairs,x=>x.mondayEnergy),mondayMood:avg(sundayResetPairs,x=>x.mondayMood),mondayLifeScore:avg(sundayResetPairs,x=>x.mondayLifeScore)},afterSundayNoReset:{count:sundayNoResetPairs.length,mondayEnergy:avg(sundayNoResetPairs,x=>x.mondayEnergy),mondayMood:avg(sundayNoResetPairs,x=>x.mondayMood),mondayLifeScore:avg(sundayNoResetPairs,x=>x.mondayLifeScore)}},
     recentByWeekday:entries.slice(-14).map(e=>({date:e.date,weekday:weekdayForDateKey(e.date),energy:+e.data.energy||null,mood:+e.data.mood||null,sleep:+e.data.sleep||null,lifeScore:scoreDay(e.data).pct,water:!!e.data.water,azure:!!e.data.azure,money:!!e.data.money,nightReset:!!e.data.night}))
   };
+  });
 }
 function weekdayPatternForForecast(dateKey=todayKey()){
   const layer=weekdayPatternLayer('all');
@@ -3737,6 +3813,7 @@ function peakForecastDisplayMaturity(entries=recentEntries(7)){
 
 
 function buildTodayCommand(){
+  return renderCacheGet('todayCommand|'+todayKey()+'|'+currentGuidePeriod().key,()=>{
   const d=day();
   const f=peakForecast(d);
   const displayMove=forecastDisplayMove(f);
@@ -3762,6 +3839,7 @@ function buildTodayCommand(){
     display,
     displayMove
   };
+  });
 }
 
 function renderTodayCommandCard(){
@@ -3793,23 +3871,36 @@ function renderTodayCommandCard(){
   </div>`;
 }
 
+function hydrateForecastDetails(el){
+  try{
+    if(!el || !el.open) return;
+    const box=el.querySelector('[data-forecast-lazy]');
+    if(!box || box.dataset.rendered==='1') return;
+    const f=peakForecast(day());
+    const displayMove=forecastDisplayMove(f);
+    box.innerHTML=`
+      ${peakForecastLevel5Html(f,displayMove)}
+      <div class="quote" style="margin-top:10px"><b>Peak Aim:</b> ${esc(growthSafeText(f.peakAim||'Make the next block better.'))}</div>
+      <div class="chips" style="margin-top:8px"><span class="chip">${esc(f.moveDomain||'Body / Energy')}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(f.moveMode||'Lift')} purpose</span></div>
+      <div style="margin-top:10px"><h3>Why this forecast looks this way</h3><div class="reasonGroups">${forecastReasonGroupsHtml(f.reasons,f)}</div></div>`;
+    box.dataset.rendered='1';
+  }catch(e){
+    try{const box=el.querySelector('[data-forecast-lazy]'); if(box) box.innerHTML='<div class="tiny">Forecast details could not load.</div>'; }catch(_e){}
+  }
+}
 function renderPeakForecastCards(){
   const d=day();
   const f=peakForecast(d);
-  const displayMove=forecastDisplayMove(f);
   const color=f.level==='Green'?'good':f.level==='Yellow'?'warn':'bad';
   const readHint=f.readMode+' score';
   const whyHeading='Forecast Details';
   return `<div class="card span7 commandDetailsCard" id="guide-today-forecast-why"><h2>${whyHeading} <span class="chip ${peakModeClass(f.moveMode)}">${esc(peakLevel5Mode(f))}</span></h2>
-    <details class="forecastDetails">
+    <details class="forecastDetails" ontoggle="hydrateForecastDetails(this)">
       <summary class="tiny">Open forecast score, reasons, and deeper read</summary>
       <div class="kpi" style="margin-top:10px"><div><span class="chip ${color}">Risk level: ${f.level}</span><div class="muted forecastLine" style="margin-top:8px"><span>${readHint}</span></div><div id="forecastInfoBox" class="forecastInfoBox hidden">${esc(f.readDetails||'')}</div></div><div class="num">${f.score}%</div></div>
       <div class="bar ${f.level==='Red'?'danger':f.level==='Yellow'?'warn':''}"><i style="width:${f.score}%"></i></div>
       <div class="chips" style="margin-top:10px"><span class="chip">Higher = stronger outlook</span><span class="chip">${f.loggedDays} days</span>${!f.currentStateLogged?'<span class="chip warn">log current state to confirm</span>':''}</div>
-      ${peakForecastLevel5Html(f,displayMove)}
-      <div class="quote" style="margin-top:10px"><b>Peak Aim:</b> ${esc(growthSafeText(f.peakAim||'Make the next block better.'))}</div>
-      <div class="chips" style="margin-top:8px"><span class="chip">${esc(f.moveDomain||'Body / Energy')}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(f.moveMode||'Lift')} purpose</span></div>
-      <div style="margin-top:10px"><h3>Why this forecast looks this way</h3><div class="reasonGroups">${forecastReasonGroupsHtml(f.reasons,f)}</div></div>
+      <div data-forecast-lazy="1" class="tiny" style="margin-top:10px">Details load when opened.</div>
     </details>
   </div>`;
 }
@@ -5079,20 +5170,34 @@ function toggleMinimumWinDone(key){
   key=String(key||'');
   if(!key) return;
   const current=mw.status?.[key];
-  if(current?.status==='done' && current?.manual){
+  const turningOff=!!(current?.status==='done' && current?.manual);
+  if(turningOff){
     delete mw.status[key];
   }else{
     mw.status[key]={status:'done',manual:true,completedAt:new Date().toISOString(),source:'manual_check'};
   }
+  try{
+    const btn=event?.currentTarget;
+    if(btn){
+      btn.classList.toggle('checked',!turningOff);
+      const item=btn.closest('.minimumWinItem');
+      const chip=item?.querySelector('em.chip');
+      if(chip){chip.textContent=turningOff?'Open':'Done'; chip.className='chip '+(turningOff?'warn':'good');}
+      if(item){item.classList.toggle('open',turningOff); item.classList.toggle('done',!turningOff);}
+    }
+  }catch(e){}
+  markInputUpdated();
   save();
   render();
 }
 
 function todayWinsProgress(d=day()){
-  const items=minimumWinItems(d);
-  const statuses=items.map(i=>minimumWinStatusForItem(i,d));
-  const done=statuses.filter(s=>s.label==='Done' || s.label==='Covered').length;
-  return {done,total:items.length,statuses};
+  return renderCacheGet('todayWinsProgress|'+todayKey(),()=>{
+    const items=minimumWinItems(d);
+    const statuses=items.map(i=>minimumWinStatusForItem(i,d));
+    const done=statuses.filter(s=>s.label==='Done' || s.label==='Covered').length;
+    return {done,total:items.length,statuses};
+  });
 }
 
 
@@ -6830,13 +6935,13 @@ function dateKeyForRecord(target){
   return found?found[0]:(target._dateKey||target.date||todayKey());
 }
 function forecastEntriesBefore(dateKey=todayKey(), limit=30){
-  return Object.keys(state.days||{})
+  return renderCacheGet('forecastEntriesBefore|'+String(dateKey)+'|'+String(limit),()=>Object.keys(state.days||{})
     .filter(k=>k<dateKey)
     .sort()
     .reverse()
     .map(k=>({offset:null,key:k,date:k,data:state.days[k]?migrateDay(state.days[k]):null}))
     .filter(e=>e.data&&hasLoggedTodayInput(e.data))
-    .slice(0,limit);
+    .slice(0,limit));
 }
 function forecastRecentEntries(limit=3, beforeKey=todayKey()){
   return forecastEntriesBefore(beforeKey,limit).map((e,i)=>({...e,offset:i+1}));
@@ -11872,16 +11977,18 @@ function emergencyReset(){
 function renderWeek(){return sectionWrap('week',`<div class="grid"><div class="card span12" id="guide-weekly-rhythm"><h2>Weekly Rhythm</h2><div class="chips" style="margin-bottom:10px"><button class="btn small primary" onclick="startWeeklyGuide()">Start Weekly Guide</button><span class="chip">${weeklyGuideStatusText()}</span></div><div class="statusGrid">${Object.entries(state.weeklyAnchors).map(([dayName,val])=>`<div class="statusItem"><div class="title">${dayName}</div><input value="${val}" onchange='state.weeklyAnchors[${JSON.stringify(dayName)}]=this.value;save();render()'><div class="tiny" style="margin-top:8px">One must-do · one maintenance task · one human thing</div></div>`).join('')}</div></div></div>`)}
 function renderVision(){return sectionWrap('vision',`<div class="grid"><div class="card span6"><h2>3-Year Direction</h2><ul class="mini-list"><li>Azure Cloud Administrator / Cloud Systems Administrator</li><li>Higher income and stronger career proof</li><li>Car paid off</li><li>Rental-property fund growing</li><li>Roth IRA funded yearly</li><li>Better health and endurance</li><li>Emotionally grounded father</li><li>Stable, attractive, disciplined life</li></ul></div><div class="card span6"><h2>Thermostat</h2><div class="quote">Raise identity standards, not lifestyle spending.</div><ul class="mini-list"><li>Raise discipline, health, fatherhood, career, and financial standards.</li><li>Do not raise random spending just because income increases.</li><li>Strong life = calm habits repeated.</li></ul></div></div>`)}
 function recentEntries(daysBack=7){
-  if(daysBack==='all'){
-    return Object.keys(state.days||{}).sort().map(k=>({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null}));
-  }
-  const out=[];
-  const base=todayKey();
-  for(let i=daysBack-1;i>=0;i--){
-    const k=offsetDateKey(base,-i);
-    out.push({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null});
-  }
-  return out;
+  return renderCacheGet('recentEntries|'+String(daysBack)+'|'+todayKey(),()=>{
+    if(daysBack==='all'){
+      return Object.keys(state.days||{}).sort().map(k=>({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null}));
+    }
+    const out=[];
+    const base=todayKey();
+    for(let i=daysBack-1;i>=0;i--){
+      const k=offsetDateKey(base,-i);
+      out.push({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null});
+    }
+    return out;
+  });
 }
 function average(nums){const clean=nums.filter(n=>typeof n==='number'&&!Number.isNaN(n)); return clean.length?Math.round((clean.reduce((a,b)=>a+b,0)/clean.length)*10)/10:null}
 function yesRate(entries, path){const days=entries.filter(e=>e.data); if(!days.length)return 0; const yes=days.filter(e=>{let o=e.data; for(const p of path){if(!o)return false; o=o[p]} return !!o}).length; return Math.round((yes/days.length)*100)}
@@ -13327,8 +13434,8 @@ function buildFullBackupExport(){
   return backup;
 }
 function exportData(){downloadBackupNow('manual')}
-function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj);active=state.settings?.activeTab||'today';guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
-function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); render(); alert('App data reset.')}}
+function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj); renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; active=state.settings?.activeTab||'today';guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
+function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); navTabsBuilt=false; renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; render(); alert('App data reset.')}}
 function toggleTheme(){state.theme='dark'; state.settings=state.settings||{}; state.settings.themeLocked='dark'; save(); render()}
 function saveOnExit(){try{commitFocusedField(); save(true); flushPendingSaveNow('exit'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedRaw(JSON.stringify(state)); flushSecondaryStorageWrites();}catch(err){}}}
 function isExportDownloadControl(e){
