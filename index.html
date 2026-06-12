@@ -281,18 +281,6 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .exportProgressBox.done .exportProgressBar>i{background:linear-gradient(90deg,var(--green),#14b8a6)}
 .exportProgressHint{margin-top:7px;color:var(--muted);line-height:1.35}
 
-
-/* Wave 6: lighter surface, same underlying logic */
-.wave6Compact.card,.wave6Compact{padding:14px}
-.wave6Compact h2{margin-bottom:8px}
-.wave6Compact .tiny{line-height:1.35}
-.wave6CompactGrid{gap:12px}
-.wave6Today .card{scroll-margin-top:80px}
-.wave6Nested{box-shadow:none;background:rgba(255,255,255,.025)}
-details.wave6Compact>summary, .wave6Compact details>summary{cursor:pointer;list-style:none}
-details.wave6Compact>summary::-webkit-details-marker,.wave6Compact details>summary::-webkit-details-marker{display:none}
-.commandDetailsCard h2{font-size:1.05rem}
-.commandDetailsCard details{margin-top:0}
 </style>
 </head>
 <body>
@@ -337,7 +325,7 @@ let lastInputUpdatedAt = null;
 let pendingInputUpdate=false;
 let pendingInputUpdateAt=null;
 const tabs = [
-  ['today','Today'],['azure','Azure'],['money','Money'],['father','Father'],['faith','Faith'],['health','Health'],['pattern','Pattern'],['social','Presence/Social'],['therapy','Therapy'],['week','Week'],['vision','Vision'],['data','Data']
+  ['today','Today'],['azure','Azure'],['money','Money'],['father','Father'],['faith','Faith'],['health','Health'],['pattern','Pattern'],['social','Love/Social'],['therapy','Therapy'],['week','Week'],['vision','Vision'],['data','Data']
 ];
 const ADAYA_STAGES = ['Not Introduced','Exposed Through Play','Practicing With Daddy','Needs Support','Doing Sometimes','Doing Often','Uses On Her Own'];
 const ADAYA_STAGE_ALIASES = {'Can Explain / Use It':'Uses On Her Own','Understands + Uses It':'Uses On Her Own'};
@@ -578,7 +566,17 @@ function browserStorageWorks(){
   const k=LS_KEY+'_storage_test';
   try{localStorage.setItem(k,'1'); const ok=localStorage.getItem(k)==='1'; localStorage.removeItem(k); return ok;}catch(e){return false;}
 }
+function sessionStorageWorks(){
+  const k=LS_KEY+'_session_storage_test';
+  try{sessionStorage.setItem(k,'1'); const ok=sessionStorage.getItem(k)==='1'; sessionStorage.removeItem(k); return ok;}catch(e){return false;}
+}
 function isLocalAppMode(){return location.protocol==='file:'||location.protocol==='content:'||location.origin==='null'}
+function isAndroidLocalHtmlMode(){
+  try{return isLocalAppMode() && /Android/i.test(navigator.userAgent||'');}catch(e){return isLocalAppMode();}
+}
+function needsImmediateTabRecoveryWrite(){
+  try{return isLocalAppMode() || !browserStorageWorks();}catch(e){return true;}
+}
 function partsInZone(dt=new Date(), timeZone=APP_TIME_ZONE){
   const parts = new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'}).formatToParts(dt);
   return Object.fromEntries(parts.map(p=>[p.type,p.value]));
@@ -842,16 +840,23 @@ function scheduleDeferredRecoveryWrites(compactRaw){
     deferredRecoveryTimer=setTimeout(()=>flushDeferredRecoveryWrites(),700);
   }catch(e){}
 }
+function writeImmediateTabRecovery(raw){
+  // Bug-fix only: Android content:// / Downloads mode can block or wipe localStorage.
+  // Keep the current tab recoverable immediately, without changing LS_KEY or saved data shape.
+  try{writeRawToUrlHash(raw);}catch(e){}
+  try{sessionStorage.setItem(STATE_SESSION_KEY, raw);}catch(e){}
+  try{sessionStorage.setItem(STATE_BACKUP_KEY, raw);}catch(e){}
+  try{window.name = STATE_WINDOW_PREFIX + raw;}catch(e){}
+  try{writeCriticalRecoveryState();}catch(e){}
+  try{writeAdayaRecoveryState();}catch(e){}
+}
 function flushDeferredRecoveryWrites(){
   try{
     if(deferredRecoveryTimer){clearTimeout(deferredRecoveryTimer); deferredRecoveryTimer=null;}
     const raw=deferredRecoveryRaw;
     deferredRecoveryRaw=null;
     if(!raw) return;
-    try{writeRawToUrlHash(raw);}catch(e){}
-    try{window.name = STATE_WINDOW_PREFIX + raw;}catch(e){}
-    try{writeCriticalRecoveryState();}catch(e){}
-    try{writeAdayaRecoveryState();}catch(e){}
+    writeImmediateTabRecovery(raw);
     updateSaveStatus();
   }catch(e){}
 }
@@ -919,6 +924,8 @@ function rawSaveStamp(raw){
     const obj=JSON.parse(raw);
     const stamps=[obj._savedAt, obj._lastSaveAt, obj._inputUpdatedAt, obj.settings?.autoBackupLastAt];
     let times=stamps.map(stampFromIso).filter(Boolean);
+    const guideStamp=guideCompletionStampFromSettings(obj.settings);
+    if(guideStamp) times.push(guideStamp);
     if(obj.days){Object.values(obj.days).forEach(d=>times.push(daySaveStamp(d)));}
     return times.length?Math.max(...times):0;
   }catch(e){return 0;}
@@ -1088,9 +1095,62 @@ function meaningfulDayStamp(d){
     return Math.max(0,...times);
   }catch(e){return 0;}
 }
+
+function dateKeyMiddayStamp(k){
+  try{
+    if(!k) return 0;
+    const d=new Date(String(k)+'T12:00:00');
+    const t=d.getTime();
+    return Number.isNaN(t)?0:t;
+  }catch(e){return 0;}
+}
+function guideCompletionStampFromSettings(settings){
+  try{
+    const s=settings||{};
+    const stamps=[
+      s.lastMorningGuideCompletedAt,
+      s.lastAfternoonGuideCompletedAt,
+      s.lastEveningGuideCompletedAt,
+      s.lastSmartCheckInCompletedAt,
+      s.lastGuideCompletedAt
+    ].map(stampFromIso).filter(Boolean);
+    stamps.push(dateKeyMiddayStamp(s.lastMorningGuideCompletedDay));
+    stamps.push(dateKeyMiddayStamp(s.lastAfternoonGuideCompletedDay));
+    stamps.push(dateKeyMiddayStamp(s.lastEveningGuideCompletedDay));
+    return stamps.length?Math.max(...stamps):0;
+  }catch(e){return 0;}
+}
+function copyGuideCompletionIfNewer(targetSettings, sourceSettings, period){
+  try{
+    const t=targetSettings||{}; const s=sourceSettings||{};
+    const cap=period.charAt(0).toUpperCase()+period.slice(1);
+    const dayKey='last'+cap+'GuideCompletedDay';
+    const atKey='last'+cap+'GuideCompletedAt';
+    const sourceStamp=Math.max(stampFromIso(s[atKey]), dateKeyMiddayStamp(s[dayKey]));
+    const targetStamp=Math.max(stampFromIso(t[atKey]), dateKeyMiddayStamp(t[dayKey]));
+    if(sourceStamp && sourceStamp>=targetStamp){
+      if(s[dayKey]) t[dayKey]=s[dayKey];
+      if(s[atKey]) t[atKey]=s[atKey];
+    }
+  }catch(e){}
+}
+function mergeGuideCompletionSettings(targetSettings, sourceSettings){
+  const out=Object.assign({}, targetSettings||{});
+  ['morning','afternoon','evening'].forEach(p=>copyGuideCompletionIfNewer(out, sourceSettings||{}, p));
+  try{
+    const s=sourceSettings||{};
+    if(stampFromIso(s.lastSmartCheckInCompletedAt)>=stampFromIso(out.lastSmartCheckInCompletedAt)){
+      if(s.lastSmartCheckInCompletedAt) out.lastSmartCheckInCompletedAt=s.lastSmartCheckInCompletedAt;
+      if(s.lastSmartCheckInCompletedSourcePeriod) out.lastSmartCheckInCompletedSourcePeriod=s.lastSmartCheckInCompletedSourcePeriod;
+    }
+  }catch(e){}
+  return out;
+}
 function meaningfulStateStamp(s){
   try{
     const stamps=[s?._inputUpdatedAt,s?._lastMeaningfulInputAt].map(stampFromIso).filter(Boolean);
+    const guideStamp=guideCompletionStampFromSettings(s?.settings);
+    if(guideStamp) stamps.push(guideStamp);
     Object.values(s?.days||{}).forEach(d=>stamps.push(meaningfulDayStamp(d)));
     return stamps.length?Math.max(...stamps):0;
   }catch(e){return 0;}
@@ -1140,6 +1200,10 @@ function mergeStatesNewestWins(localState, savedState){
     if(activeTab) merged.settings.activeTab=activeTab;
     if(guide) merged.settings.guideState=guide;
   }
+  // Guide-completion flags live in settings rather than days, so preserve them by their own stamps.
+  // This prevents a newer Evening/Morning/Afternoon Done flag from being lost when saved-state
+  // candidates are merged after refresh/reload.
+  merged.settings=mergeGuideCompletionSettings(mergeGuideCompletionSettings(merged.settings||{}, localState.settings||{}), savedState.settings||{});
   if(savedState.adaya && shouldUseImportedAdaya(merged.adaya, savedState.adaya)) merged.adaya=deepClone(savedState.adaya);
   if(stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
   return migrate(merged);
@@ -1222,6 +1286,12 @@ function writeSavedRaw(raw){
   try{localStorage.setItem(STATE_LAST_GOOD_KEY, compactRaw);}catch(e){}
   try{sessionStorage.setItem(STATE_SESSION_KEY, compactRaw);}catch(e){}
   try{sessionStorage.setItem(STATE_BACKUP_KEY, compactRaw);}catch(e){}
+
+  if(needsImmediateTabRecoveryWrite()){
+    // In Android local HTML/content:// mode, the deferred fallback may not fire before the app is closed.
+    // Write the tab/hash/session recovery immediately so today's inputs do not visually roll back.
+    try{writeImmediateTabRecovery(compactRaw);}catch(e){}
+  }
 
   raw=compactRaw;
   try{
@@ -1505,7 +1575,7 @@ function save(skipSnapshot=false){
   const now=new Date().toISOString();
   state._savedAt=now;
   markExpiredForecastActions();
-  state._schemaVersion='v277-phase-63-automatic-bedtime-shutdown-move-no-cache-touch';
+  state._schemaVersion='v279-guide-completion-persistence-bugfix';
   autoCompleteDueForecastEffectsSilently();
   if(state.days?.[todayKey()]){
     state.days[todayKey()]._savedAt=now;
@@ -2970,6 +3040,12 @@ function completeGuide(){
   const completedAt=new Date().toISOString();
   if(donePeriod==='weekly'){migrate(state); state.adaya.weekly=state.adaya.weekly||{}; state.adaya.weekly.lastGuideCompletedWeek=weekStartKey(todayKey()); state.adaya.weekly.lastGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='morning'){state.settings=state.settings||{}; state.settings.lastMorningGuideCompletedDay=todayKey(); state.settings.lastMorningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='afternoon'){state.settings=state.settings||{}; state.settings.lastAfternoonGuideCompletedDay=todayKey(); state.settings.lastAfternoonGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='evening'){state.settings=state.settings||{}; state.settings.lastEveningGuideCompletedDay=todayKey(); state.settings.lastEveningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='smart'){state.settings=state.settings||{}; state.settings.lastSmartCheckInCompletedAt=completedAt; state.settings.lastSmartCheckInCompletedSourcePeriod=guideState?.sourcePeriod||currentGuidePeriod().key; save(true);}
   guideState=null;
+  state.settings=state.settings||{};
+  state.settings.guideState=null;
+  try{markInputUpdated(completedAt);}catch(e){}
+  // Save once more after clearing guideState so the durable state has the completed badge
+  // and does not rely on an in-progress guide snapshot.
+  try{save(true);}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
   persistGuideState();
   const box=document.getElementById('guideControls');
   if(box){
@@ -3579,7 +3655,7 @@ function renderTodayCommandCard(){
   const evidence=(c.evidence||[]).map(x=>`<li>${esc(growthSafeText(x))}</li>`).join('');
   return `<div class="card span8 commandCard" id="guide-today-forecast">
     <div class="commandHead">
-      <div><div class="commandTitle">Today Command</div></div>
+      <div><div class="commandTitle">Today Command</div><div class="tiny">One command. Deeper logic stays underneath.</div></div>
       <div><div class="commandScore">${c.score}%</div><div class="chips" style="justify-content:flex-end"><span class="chip ${color}">${esc(c.band)}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(c.mode)}</span></div></div>
     </div>
     <div class="commandGrid">
@@ -3590,6 +3666,7 @@ function renderTodayCommandCard(){
     </div>
     <div class="commandDoNow"><b>Do Now</b>${esc(c.doNow)}</div>
     ${forecastMoveControls(f,displayMove)}
+    ${renderWave3ProofPrompt()}
     <details class="forecastDetails" style="margin-top:10px">
       <summary class="tiny">Why this command?</summary>
       <div class="commandMeta"><span class="chip">Effect: ${esc(c.expectedEffect)}</span><span class="chip warn">Confidence: ${esc(c.confidence)}</span></div>
@@ -3835,7 +3912,7 @@ const TODAY_WIN_LIBRARY=[
   {id:'father_20_min_block',lane:'father',tier:'needle',text:'Give Adaya 20 focused minutes',energyMin:5,fatherDrift:true,weight:92},
   {id:'father_30_min_skill_block',lane:'father',tier:'elite',text:'Give Adaya 30 focused minutes and teach one skill',energyMin:6,focusMin:5,fatherDrift:true,weight:96},
 
-  // Presence / Social Confidence
+  // Presence / Social Confidence / Sex Life Direction
   {id:'presence_groom_outfit',lane:'presence',tier:'floor',text:'Clean up and wear a better outfit',presenceDrift:true,weight:91},
   {id:'presence_self_respect_reset',lane:'presence',tier:'floor',text:'Do one self-respect reset',presenceDrift:true,weight:86},
   {id:'presence_posture_reset',lane:'presence',tier:'floor',text:'Do grooming and posture reset',presenceDrift:true,weight:84},
@@ -3844,19 +3921,19 @@ const TODAY_WIN_LIBRARY=[
   {id:'presence_real_conversation',lane:'presence',tier:'needle',text:'Start one real conversation',energyMin:5,focusMin:4,presenceDrift:true,weight:95},
   {id:'presence_face_to_face',lane:'presence',tier:'standard',text:'Have one face-to-face interaction',energyMin:4,focusMin:4,presenceDrift:true,weight:92},
   {id:'presence_genuine_compliment',lane:'presence',tier:'standard',text:'Give one genuine compliment',energyMin:4,focusMin:4,presenceDrift:true,weight:89},
-  {id:'presence_woman_message',lane:'presence',tier:'needle',text:'Send one warm message',energyMin:5,focusMin:4,presenceDrift:true,weight:91},
-  {id:'presence_invite_plan',lane:'presence',tier:'elite',text:'Invite someone to a simple plan',energyMin:7,focusMin:5,presenceDrift:true,weight:96},
-  {id:'presence_flirt_rep',lane:'presence',tier:'needle',text:'Make one playful social rep',energyMin:6,focusMin:5,presenceDrift:true,weight:93},
-  {id:'presence_photo_check',lane:'presence',tier:'standard',text:'Take one clean photo',energyMin:5,presenceDrift:true,weight:86},
-  {id:'presence_room_attractive',lane:'presence',tier:'standard',text:'Make your space feel more put together',energyMin:4,presenceDrift:true,environmentDrift:true,weight:87},
+  {id:'presence_woman_message',lane:'presence',tier:'needle',text:'Send one clear message to a woman',energyMin:5,focusMin:4,presenceDrift:true,weight:91},
+  {id:'presence_invite_plan',lane:'presence',tier:'elite',text:'Invite someone to a real plan',energyMin:7,focusMin:5,presenceDrift:true,weight:96},
+  {id:'presence_flirt_rep',lane:'presence',tier:'needle',text:'Make one confident flirt rep',energyMin:6,focusMin:5,presenceDrift:true,weight:93},
+  {id:'presence_photo_check',lane:'presence',tier:'standard',text:'Take one clean profile photo',energyMin:5,presenceDrift:true,weight:86},
+  {id:'presence_room_attractive',lane:'presence',tier:'standard',text:'Make your space more date-ready',energyMin:4,presenceDrift:true,environmentDrift:true,weight:87},
   {id:'presence_no_hiding',lane:'presence',tier:'floor',text:'Do not hide from being seen today',energyMax:5,presenceDrift:true,weight:82},
   {id:'presence_social_calendar',lane:'presence',tier:'standard',text:'Put one social plan on the calendar',energyMin:4,presenceDrift:true,weight:88},
 
   // Home / Environment / Identity Support
   {id:'env_clear_surface',lane:'environment',tier:'floor',text:'Clear one surface',environmentDrift:true,weight:78},
   {id:'env_reset_identity_area',lane:'environment',tier:'standard',text:'Reset one area that affects your identity',energyMin:4,environmentDrift:true,weight:84},
-  {id:'env_date_ready_zone',lane:'environment',tier:'needle',text:'Make one area feel more put together',energyMin:5,environmentDrift:true,presenceDrift:true,weight:89},
-  {id:'env_identity_reset_elite',lane:'environment',tier:'elite',text:'Reset the room so it feels put together',energyMin:7,focusMin:4,environmentDrift:true,presenceDrift:true,weight:94},
+  {id:'env_date_ready_zone',lane:'environment',tier:'needle',text:'Make one area date-ready',energyMin:5,environmentDrift:true,presenceDrift:true,weight:89},
+  {id:'env_identity_reset_elite',lane:'environment',tier:'elite',text:'Reset the room and make it date-ready',energyMin:7,focusMin:4,environmentDrift:true,presenceDrift:true,weight:94},
   {id:'env_room_reset_10',lane:'environment',tier:'standard',text:'Reset the room for 10 minutes',energyMin:4,environmentDrift:true,weight:82},
   {id:'env_laundry_step',lane:'environment',tier:'standard',text:'Move laundry one step forward',energyMin:4,environmentDrift:true,weight:79},
   {id:'env_car_trash',lane:'environment',tier:'floor',text:'Clear trash from the car',environmentDrift:true,weight:78},
@@ -5029,30 +5106,30 @@ function renderMinimumWinItems(){
 }
 
 function renderToday(){const d=day(), s=scoreDay(d), arr=sevenDay(); const mode=d.energy<=3?'Low Energy':d.energy>=7?'High Energy':'Normal';
-return sectionWrap('today', `<div class="grid wave6Today">
+return sectionWrap('today', `<div class="grid">
   ${renderTodayCommandCard()}
-  <div class="card span4 commandScoreCard wave6Compact"><div class="kpi"><div><h2>Pulse</h2></div><div class="num">${s.pct}%</div></div><div class="bar"><i style="width:${s.pct}%"></i></div><div class="chips" style="margin-top:8px"><span class="chip ${d.energy>=7?'good':d.energy<=3?'bad':'warn'}">${mode}</span><span class="chip">7-day ${Math.round(arr.reduce((a,b)=>a+b,0)/7)}%</span></div></div>
-  <div class="card span5 minimumWinCard compact wave6Compact" id="guide-today-minimum-win"><h2>Today's Minimum Win <span class="chip good">Linked</span></h2>${renderMinimumWinItems()}</div>
+  <div class="card span4 commandScoreCard"><div class="kpi"><div><h2>Today Score</h2><div class="muted">No shame. Just direction.</div></div><div class="num">${s.pct}%</div></div><div class="bar"><i style="width:${s.pct}%"></i></div><div class="chips" style="margin-top:10px"><span class="chip ${d.energy>=7?'good':d.energy<=3?'bad':'warn'}">${mode}</span><span class="chip">7-day: ${Math.round(arr.reduce((a,b)=>a+b,0)/7)}%</span></div></div>
+  <div class="card span5 minimumWinCard compact" id="guide-today-minimum-win"><h2>Today's Minimum Win <span class="chip good">Linked</span></h2>${renderMinimumWinItems()}</div>
   ${renderPeakForecastCards()}
   ${weeklyGuideDue()?renderWeeklyGuidePrompt():''}
   ${renderSaturdayOnlyCard()}
-  <div class="card span6 wave6Compact" id="guide-today-core"><h2>Life Checks</h2>
-    ${input('range','Energy',d.energy,'v=>setDay("energy",+v)','min="1" max="10"','energy')}
-    ${input('range','Mood',d.mood,'v=>setDay("mood",+v)','min="1" max="10"','mood')}
+  <div class="card span6" id="guide-today-core"><h2>Life Checks</h2><div class="tiny">Move sliders to log this time block.</div>
+    ${input('range','Energy score',d.energy,'v=>setDay("energy",+v)','min="1" max="10"','energy')}
+    ${input('range','Mood score',d.mood,'v=>setDay("mood",+v)','min="1" max="10"','mood')}
     ${input('number','Sleep hours',d.sleep,'v=>setDay("sleep",+v)','step="0.25"')}
-    ${d.sleepSource==='night_inputs'?`<div class="tiny" style="margin-top:-4px;margin-bottom:8px">Synced from Pattern → Last night bedtime/wake time.</div>`:''}
+    ${d.sleepSource==='night_inputs'?`<div class="tiny" style="margin-top:-4px;margin-bottom:8px">Synced from Pattern → Last night bedtime/wake time. Night Inputs override this number.</div>`:''}
   </div>
   ${renderMorningStartCard()}
-  <div class="card span6 wave6Compact" id="guide-today-daily-checks"><h2>Daily Checks</h2>
-    ${checkbox('Water / hydration',d.water,'v=>setDay("water",v)')}
-    ${checkbox('Body movement / workout',d.workout,'v=>setDay("workout",v)')}
-    ${checkbox('Azure study / lab',d.azure,'v=>setDay("azure",v)')}
+  <div class="card span6" id="guide-today-daily-checks"><h2>Daily Checks</h2><div class="tiny">These stay checked until the sleep-day rollover.</div>
+    ${checkbox('Water / hydration check',d.water,'v=>setDay("water",v)')}
+    ${checkbox('Workout / walk check',d.workout,'v=>setDay("workout",v)')}
+    ${checkbox('Azure study / lab check',d.azure,'v=>setDay("azure",v)')}
   </div>
-  <div class="card span6 wave6Compact" id="guide-today-life-checks"><h2>Life Checks</h2>
+  <div class="card span6" id="guide-today-life-checks"><h2>Daily Life Checks</h2>
     ${checkbox('Money check',d.money,'v=>setDay("money",v)')}
-    ${checkbox('Adaya connection',d.fatherCheck,'v=>setDay("fatherCheck",v)')}
+    ${checkbox('Adaya / fatherhood connection',d.fatherCheck,'v=>setDay("fatherCheck",v)')}
     ${checkbox('Home reset',d.home,'v=>setDay("home",v)')}
-    ${checkbox('Presence / social rep',d.socialCheck,'v=>setDay("socialCheck",v)')}
+    ${checkbox('Social / connection rep',d.socialCheck,'v=>setDay("socialCheck",v)')}
     ${checkbox('Night reset',d.night,'v=>setDay("night",v)')}
     <textarea placeholder="Quick note..." onchange="day().notes=this.value;day()._logged.notes=true;save()">${d.notes||''}</textarea>
   </div>
@@ -5363,7 +5440,7 @@ function renderAzureProofLadder(){
   const recPct=rec?pct(azureProofStageIndex(recStage),AZURE_PROOF_STAGES.length-1):0;
   const opts=Object.keys(state.azure.skills||{}).map(s=>`<option value="${esc(s)}" ${s===skill?'selected':''}>${esc(s)}</option>`).join('');
   const weak=p.weakTopics||[];
-  return `<div class="card span12 wave6Compact" id="guide-azure-proof-ladder"><h2>Azure Proof Ladder</h2><div class="field"><label>Current proof skill</label><select onchange="setAzureCurrentSkill(this.value)">${opts}</select></div>${rec?`<div class="row"><span>${esc(skill)}</span><b>${esc(recStage)}</b></div><div class="bar"><i style="width:${recPct}%"></i></div><div class="chips" style="margin-top:8px">${AZURE_PROOF_STAGES.map(stage=>`<button type="button" class="btn small ${stage===recStage?'primary':''}" onclick='setAzureProofStage(${JSON.stringify(skill)},${JSON.stringify(stage)})'>${esc(stage)}</button>`).join('')}</div>${renderAzureProofCreatedRow()}<div class="field"><label>Explain-from-memory confidence: ${Number(rec.explainConfidence||0)}/10</label><input type="range" min="0" max="10" value="${Number(rec.explainConfidence||0)}" onchange='setAzureExplainConfidence(${JSON.stringify(skill)},this.value)'></div><div class="field"><label>Resume/interview bullet</label><textarea placeholder="What did you build, prove, fix, or explain?" onchange='setAzureProofText(${JSON.stringify(skill)},"resumeBullet",this.value)'>${esc(rec.resumeBullet||'')}</textarea></div><div class="field"><label>Proof notes</label><textarea placeholder="Screenshot path, lab note, broke/fix detail..." onchange='setAzureProofText(${JSON.stringify(skill)},"notes",this.value)'>${esc(rec.notes||'')}</textarea></div>`:''}<details style="margin-top:10px"><summary class="tiny">Weak topics + recommendation</summary><div class="grid" style="margin-top:10px"><div class="card span6"><h3>Weak Topic Queue</h3><div class="field"><label>Add weak topic</label><input placeholder="Example: NSG vs ASG" onchange="addAzureWeakTopic(this.value);this.value=''"></div><ul class="mini-list">${weak.slice(-8).map((w,i)=>`<li>${w.status==='closed'?'✓ ':''}${esc(w.topic)} ${w.status==='closed'?'':'<button class="btn small" onclick="closeAzureWeakTopic('+i+')">Close</button>'}</li>`).join('')}</ul></div><div class="card span6"><h3>Proof Recommendation</h3><div class="quote">${esc(azureProofRecommendation(buildForecastContext(day())).text)}</div><p class="tiny">Uses current state: red = tiny review, yellow = proof rep, green = deep proof / resume bullet.</p></div></div></details></div>`;
+  return `<div class="card span12" id="guide-azure-proof-ladder"><h2>Azure Proof Ladder</h2><p class="tiny">Level 5 means proof you can defend, not just time spent studying.</p><div class="field"><label>Current proof skill</label><select onchange="setAzureCurrentSkill(this.value)">${opts}</select></div>${rec?`<div class="row"><span>${esc(skill)}</span><b>${esc(recStage)}</b></div><div class="bar"><i style="width:${recPct}%"></i></div><div class="chips" style="margin-top:8px">${AZURE_PROOF_STAGES.map(stage=>`<button type="button" class="btn small ${stage===recStage?'primary':''}" onclick='setAzureProofStage(${JSON.stringify(skill)},${JSON.stringify(stage)})'>${esc(stage)}</button>`).join('')}</div>${renderAzureProofCreatedRow()}<div class="field"><label>Explain-from-memory confidence: ${Number(rec.explainConfidence||0)}/10</label><input type="range" min="0" max="10" value="${Number(rec.explainConfidence||0)}" onchange='setAzureExplainConfidence(${JSON.stringify(skill)},this.value)'></div><div class="field"><label>Resume/interview bullet</label><textarea placeholder="What did you build, prove, fix, or explain?" onchange='setAzureProofText(${JSON.stringify(skill)},"resumeBullet",this.value)'>${esc(rec.resumeBullet||'')}</textarea></div><div class="field"><label>Proof notes</label><textarea placeholder="Screenshot path, lab note, broke/fix detail..." onchange='setAzureProofText(${JSON.stringify(skill)},"notes",this.value)'>${esc(rec.notes||'')}</textarea></div>`:''}<div class="grid" style="margin-top:10px"><div class="card span6"><h3>Weak Topic Queue</h3><div class="field"><label>Add weak topic</label><input placeholder="Example: NSG vs ASG" onchange="addAzureWeakTopic(this.value);this.value=''"></div><ul class="mini-list">${weak.slice(-8).map((w,i)=>`<li>${w.status==='closed'?'✓ ':''}${esc(w.topic)} ${w.status==='closed'?'':'<button class="btn small" onclick="closeAzureWeakTopic('+i+')">Close</button>'}</li>`).join('')}</ul></div><div class="card span6"><h3>Proof Recommendation</h3><div class="quote">${esc(azureProofRecommendation(buildForecastContext(day())).text)}</div><p class="tiny">Uses current state: red = tiny review, yellow = proof rep, green = deep proof / resume bullet.</p></div></div></div>`;
 }
 
 
@@ -5533,12 +5610,15 @@ function renderAzure(){
   const avg=Math.round(Object.values(skills).reduce((a,v)=>a+STATUS.indexOf(v),0)/(Object.values(skills).length*(STATUS.length-1))*100);
   const logged=!!d.azure;
   const logTime=d.azureLoggedAt?new Date(d.azureLoggedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}):'';
-  return sectionWrap('azure', `<div class="grid wave6CompactGrid">
-    <div class="card span4 wave6Compact" id="guide-azure-log"><h2>AZ-104 / Azure Proof</h2><div class="kpi"><span>Skill Progress</span><b class="num">${avg}%</b></div><div class="bar"><i style="width:${avg}%"></i></div><p class="tiny">Resume-ready skills: ${ready}/${Object.keys(skills).length}</p><button class="btn ${logged?'logged':'primary'}" onclick="markAzureStudy()">${logged?'Azure Study Logged Today ✓':'Log Azure Study Today'}</button><p class="tiny" style="margin-top:8px">${logged?'Logged today'+(logTime?' at '+logTime:'')+'.':'Study log is separate from proof.'}</p></div>
-    <div class="card span8 wave6Compact"><h2>Career Proof</h2><div class="kpi"><div><div class="tiny">Proof readiness</div><div class="num">${proof.proofPercent}%</div></div><div class="tiny">Next skill: ${esc(proof.nextSkill?.skill||'Pick a skill')}</div></div><div class="bar"><i style="width:${proof.proofPercent}%"></i></div><div class="chips" style="margin-top:8px"><span class="chip">Proof-ready ${proof.proofReady}/${proof.totalSkills}</span><span class="chip">Resume-ready ${proof.resumeReady}/${proof.totalSkills}</span><span class="chip">7-day Azure ${proof.rates.azureLogged}%</span></div></div>
+  return sectionWrap('azure', `<div class="grid">
+    <div class="card span4" id="guide-azure-log"><h2>AZ-104 / Azure Proof</h2><div class="kpi"><span>Skill Progress</span><b class="num">${avg}%</b></div><div class="bar"><i style="width:${avg}%"></i></div><p class="tiny">Resume-ready skills: ${ready}/${Object.keys(skills).length}</p><button class="btn ${logged?'logged':'primary'}" onclick="markAzureStudy()">${logged?'Azure Study Logged Today ✓':'Log Azure Study Today'}</button><p class="tiny" style="margin-top:8px">${logged?'Logged today'+(logTime?' at '+logTime:'')+'. This is saved in today’s log.':'Tap after any Azure study/lab work today.'}</p></div>
+    <div class="card span8"><h2>Career Level 5 Proof</h2><div class="kpi"><div><div class="tiny">Proof readiness</div><div class="num">${proof.proofPercent}%</div></div><div class="tiny">Next skill: ${esc(proof.nextSkill?.skill||'Pick a skill')}</div></div><div class="bar"><i style="width:${proof.proofPercent}%"></i></div><div class="chips" style="margin-top:8px"><span class="chip">Proof-ready ${proof.proofReady}/${proof.totalSkills}</span><span class="chip">Resume-ready ${proof.resumeReady}/${proof.totalSkills}</span><span class="chip">7-day Azure ${proof.rates.azureLogged}%</span></div><p class="tiny">Level 5 = lab/practice + break/fix + screenshot/note + explain-from-memory + resume bullet.</p></div>
     ${renderAzureProofLadder()}
-    <details class="card span12 wave6Compact"><summary><b>Learning + resume details</b> <span class="tiny">open when working on proof</span></summary><div class="grid" style="margin-top:10px">${renderLearningScienceCard().replace(/^<div class="card span12"/,'<div class="card span12 wave6Nested"')}<div class="card span8"><h2>Resume Truth Meter</h2><p class="tiny">Ladder: Not True Yet → Practiced → Built / Done → Defendable → Resume Ready.</p><div class="statusGrid">${Object.entries(claims).map(([claim,status])=>{status=normalizeClaimStatus(status); return `<div class="statusItem"><div class="title">${claim}</div><select onchange='state.azure.claims[${JSON.stringify(claim)}]=this.value;save();render()'>${CLAIM_STATUS.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></div>`}).join('')}</div></div><div class="card span4"><h2>Proof Rule</h2><div class="quote">Resume Ready means you can claim it, explain it, and defend it with real proof.</div></div></div></details>
-    <details class="card span12 wave6Compact"><summary><b>Azure Skill Tracker</b> <span class="tiny">all skills</span></summary><div class="statusGrid" style="margin-top:10px">${Object.entries(skills).map(([skill,status])=>`<div class="statusItem"><div class="title">${skill}</div><select onchange='state.azure.skills[${JSON.stringify(skill)}]=this.value;save();render()'>${STATUS.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')}</div></details>
+    ${renderLearningScienceCard()}
+    <div class="card span8"><h2>Resume Truth Meter</h2><p class="tiny">Ladder: Not True Yet → Practiced → Built / Done → Defendable → Resume Ready.</p><div class="statusGrid">${Object.entries(claims).map(([claim,status])=>{status=normalizeClaimStatus(status); return `<div class="statusItem"><div class="title">${claim}</div><select onchange='state.azure.claims[${JSON.stringify(claim)}]=this.value;save();render()'>${CLAIM_STATUS.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></div>`}).join('')}</div></div>
+    <div class="card span4"><h2>AZ-104 Proof Rules</h2><ul class="mini-list"><li><b>Red:</b> 5-minute explain/review only.</li><li><b>Yellow:</b> 15-minute lab/proof rep.</li><li><b>Green:</b> 25-minute lab, break/fix, or resume bullet.</li></ul><div class="quote">${esc(azureProofRecommendation(buildForecastContext(day())).text)}</div></div>
+    <div class="card span12"><h2>Azure Skill Tracker</h2><div class="statusGrid">${Object.entries(skills).map(([skill,status])=>`<div class="statusItem"><div class="title">${skill}</div><select onchange='state.azure.skills[${JSON.stringify(skill)}]=this.value;save();render()'>${STATUS.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')}</div></div>
+    <div class="card span12"><h2>Proof Rule</h2><div class="quote">Resume Ready means you can claim it, explain it, and defend it with a real lab, screenshot, project, work story, or troubleshooting example.</div></div>
   </div>`)
 }
 function setAzureStudyLogged(v){
@@ -5640,10 +5720,11 @@ function renderMoneyRhythmCardContent(){
 
 function renderMoney(){
   const m=state.money; const d=day(); const md=d.moneyDiscipline||{}; const carPaid=Math.max(0,m.carOriginal-m.carBalance);
-  return sectionWrap('money', `<div class="grid wave6CompactGrid">
-<div class="card span8 wave6Compact"><h2>Money Meters</h2>${progress('Car payoff',carPaid,m.carOriginal)}${propertyProgress()}${progress('Emergency fund floor',m.emergencyFund,m.emergencyFloorNow)}</div>
-<div class="card span4 wave6Compact"><h2>Update Numbers</h2>${moneyInput('Emergency fund','emergencyFund')}${moneyInput('Car balance','carBalance')}${moneyInput('Property fund','propertyFund')}<div class="chips"><button class="btn small" onclick="state.money.carBalance=Math.max(0,state.money.carBalance-1300);save();render()">-$1,300 Car</button><button class="btn small" onclick="state.money.propertyFund+=700;save();render()">+$700 Property</button></div></div>
-<div class="card span12 wave6Compact" id="guide-money-discipline"><h2>Weekly Money Rhythm</h2>${renderMoneyRhythmCardContent()}<details style="margin-top:10px"><summary class="tiny">Money rules + daily discipline</summary><div class="grid" style="margin-top:10px"><div class="card span6"><ul class="mini-list"><li>Car active: aggressive payoff + property fund.</li><li>If daycare drops before payoff: 70% car / 30% property.</li><li>After car: $625 Roth, rest property.</li><li>Later cash floor: $10,000.</li><li>No random spending.</li></ul></div><div class="card span6">${checkbox('Protected the car payoff plan',!!md.protectCar,'v=>{day().moneyDiscipline.protectCar=v;save();render()}')}${checkbox('Protected the property fund',!!md.protectProperty,'v=>{day().moneyDiscipline.protectProperty=v;save();render()}')}${checkbox('Avoided random spending',!!md.avoidRandom,'v=>{day().moneyDiscipline.avoidRandom=v;save();render()}')}</div></div></details></div>
+  return sectionWrap('money', `<div class="grid">
+<div class="card span4"><h2>Money Rules</h2><ul class="mini-list"><li>Car active: aggressive payoff + property fund.</li><li>If daycare drops before payoff: 70% car / 30% property.</li><li>After car: $625 Roth, rest property.</li><li>Later cash floor: $10,000.</li><li>No random spending.</li></ul></div>
+<div class="card span8"><h2>Visual Meters</h2>${progress('Car payoff',carPaid,m.carOriginal)}${propertyProgress()}${progress('Emergency fund floor',m.emergencyFund,m.emergencyFloorNow)}</div>
+<div class="card span6"><h2>Update Numbers</h2>${moneyInput('Emergency fund','emergencyFund')}${moneyInput('Car balance','carBalance')}${moneyInput('Property fund','propertyFund')}<div class="chips"><button class="btn small" onclick="state.money.carBalance=Math.max(0,state.money.carBalance-1300);save();render()">-$1,300 Car</button><button class="btn small" onclick="state.money.propertyFund+=700;save();render()">+$700 Property</button></div></div>
+<div class="card span6" id="guide-money-discipline"><h2>Weekly Money Rhythm</h2><div class="quote">Weekly rhythm, not daily pressure. Confirm the floor and pick the next money move.</div>${renderMoneyRhythmCardContent()}<details style="margin-top:12px"><summary class="tiny">Daily discipline quick checks</summary><div style="margin-top:8px">${checkbox('Protected the car payoff plan',!!md.protectCar,'v=>{day().moneyDiscipline.protectCar=v;save();render()}')}${checkbox('Protected the property fund',!!md.protectProperty,'v=>{day().moneyDiscipline.protectProperty=v;save();render()}')}${checkbox('Avoided random spending',!!md.avoidRandom,'v=>{day().moneyDiscipline.avoidRandom=v;save();render()}')}</div></details></div>
 </div>`)}
 function moneyInput(label,key){return `<div class="field"><label>${label}</label><input type="number" value="${state.money[key]}" step="0.01" onchange="state.money.${key}=+this.value;save();render()"></div>`}
 function adayaSkillKey(cat,skill){return cat+'|'+skill}
@@ -6287,7 +6368,7 @@ function renderActiveLoadCard(){
   const d=day();
   const a=ensureActiveLoad(d);
   const summary=activeLoadSummary(d);
-  return `<div class="card span12 wave6Compact" id="guide-active-load"><h2>Active chores / physical load</h2><p class="tiny">Effort/load only — not workout credit.</p><div class="two">${checkbox('House cleaning',!!a.houseCleaning,'v=>setActiveLoadFlag("houseCleaning",v)')}${checkbox('Car cleaning',!!a.carCleaning,'v=>setActiveLoadFlag("carCleaning",v)')}${checkbox('Heavy errands / carrying',!!a.heavyErrands,'v=>setActiveLoadFlag("heavyErrands",v)')}${checkbox('Long physical day',!!a.longPhysicalDay,'v=>setActiveLoadFlag("longPhysicalDay",v)')}</div>${summary.logged?`<div class="chips" style="margin-top:8px"><span class="chip warn">Load logged: ${esc(summary.labels.join(', '))}</span></div>`:''}</div>`;
+  return `<div class="card span12" id="guide-active-load"><h2>Active chores / physical load</h2><p class="tiny">Counts as effort/load, not workout credit.</p><div class="two">${checkbox('House cleaning',!!a.houseCleaning,'v=>setActiveLoadFlag("houseCleaning",v)')}${checkbox('Car cleaning',!!a.carCleaning,'v=>setActiveLoadFlag("carCleaning",v)')}${checkbox('Heavy errands / carrying',!!a.heavyErrands,'v=>setActiveLoadFlag("heavyErrands",v)')}${checkbox('Long physical day',!!a.longPhysicalDay,'v=>setActiveLoadFlag("longPhysicalDay",v)')}</div>${summary.logged?`<div class="chips" style="margin-top:8px"><span class="chip warn">Load logged: ${esc(summary.labels.join(', '))}</span></div>`:''}</div>`;
 }
 function ensureBodyPeakFields(d=day()){
   d=migrateDay(d||day());
@@ -6366,12 +6447,12 @@ function renderHealth(){
   const d=day(), h=ensureBodyPeakFields(d);
   const profile=bodyPhysicalPeakProfile(recentEntries(7));
   const readinessHint=h.bodyReadiness==='recovery'?'Recovery counts as recovery, not a lift.':h.bodyReadiness==='two_min'?'Two honest minutes is enough right now.':h.bodyReadiness==='ten_min'?'Do 10 real minutes, then decide.':h.bodyReadiness==='can_lift'?'Green window: a real lift is available if you do it.':'Pick what you actually did or can honestly do right now.';
-  return sectionWrap('health',`<div class="grid wave6CompactGrid">
-    <div class="card span4 wave6Compact" id="guide-health-mode"><h2>Health Mode</h2><div class="chips"><span class="chip ${d.energy<=3?'bad':d.energy>=7?'good':'warn'}">${d.energy<=3?'Low-energy':d.energy>=7?'High-energy':'Normal'}</span><span class="chip">${esc(movementStageLabel(h.movementStage))}</span></div>${checkbox('Sunlight / outdoor time',!!h.sunlight,'v=>setHealthFlag("sunlight",v)')}${checkbox('Rest / recovery respected',!!h.rest,'v=>setHealthFlag("rest",v)')}<p class="tiny">${esc(readinessHint)}</p></div>
-    <div class="card span8 wave6Compact" id="guide-body-readiness"><h2>Body Readiness</h2>${renderBodyReadinessChips()}<div class="row"><span>7-day movement</span><b>${profile.rates.anyMovement}%</b></div><div class="bar"><i style="width:${profile.rates.anyMovement}%"></i></div><div class="chips" style="margin-top:8px"><span class="chip">Starter ${profile.rates.workoutStarter}%</span><span class="chip">Lift ${profile.rates.plannedLift}%</span><span class="chip">Recovery ${profile.rates.recovery}%</span><span class="chip">Active load ${profile.rates.activeLoad||0}%</span></div></div>
-    <div class="card span12 wave6Compact" id="guide-movement-ladder"><h2>Movement Ladder</h2>${renderMovementLadderButtons()}</div>
+  return sectionWrap('health',`<div class="grid">
+    <div class="card span4" id="guide-health-mode"><h2>Health Mode</h2><div class="chips"><span class="chip ${d.energy<=3?'bad':d.energy>=7?'good':'warn'}">${d.energy<=3?'Low-energy':d.energy>=7?'High-energy':'Normal'} mode</span><span class="chip">${esc(movementStageLabel(h.movementStage))}</span></div>${checkbox('Sunlight / outdoor time',!!h.sunlight,'v=>setHealthFlag("sunlight",v)')}${checkbox('Rest / recovery respected',!!h.rest,'v=>setHealthFlag("rest",v)')}<p class="tiny">${esc(readinessHint)}</p></div>
+    <div class="card span8" id="guide-body-readiness"><h2>Body Readiness</h2><p class="tiny">This helps Peak Moves choose the right body lever without forcing full workouts.</p>${renderBodyReadinessChips()}<div class="row"><span>7-day movement</span><b>${profile.rates.anyMovement}%</b></div><div class="bar"><i style="width:${profile.rates.anyMovement}%"></i></div><div class="chips" style="margin-top:8px"><span class="chip">Starter ${profile.rates.workoutStarter}%</span><span class="chip">Lift ${profile.rates.plannedLift}%</span><span class="chip">Recovery ${profile.rates.recovery}%</span><span class="chip">Active load ${profile.rates.activeLoad||0}%</span></div></div>
+    <div class="card span12" id="guide-movement-ladder"><h2>Movement Ladder</h2>${renderMovementLadderButtons()}</div>
     ${renderActiveLoadCard()}
-    <details class="card span12 wave6Compact"><summary><b>Body rule</b> <span class="tiny">cleaning is load, not workout credit</span></summary><div class="quote" style="margin-top:10px">Cleaning, chores, and errands can drain energy, but they do not count as a workout. This ladder is only for intentional body work.</div><ul class="mini-list"><li><b>Recovery:</b> easy walk or stretch.</li><li><b>Starter:</b> intentional workout minutes.</li><li><b>Strength done:</b> actual lift completed.</li></ul></details>
+    <div class="card span12"><h2>Body Peak Rule</h2><div class="quote">Cleaning, chores, and errands can drain energy, but they do not count as a workout. This ladder is only for intentional body work.</div><ul class="mini-list"><li><b>Recovery:</b> easy walk or stretch.</li><li><b>Wake-up:</b> 2 intentional non-chore minutes.</li><li><b>Starter:</b> 10 real workout minutes.</li><li><b>Strength done:</b> actual lift completed.</li></ul></div>
   </div>`)
 }
 function sleepFromPattern(p){
@@ -9174,9 +9255,13 @@ function wave3PendingProofPromptCandidate(){
   }catch(e){return null;}
 }
 function renderWave3ProofPrompt(){
-  // Wave 3B cleanup: manual feedback is preserved in data/functions, but hidden from daily command UI.
-  // Automatic outcome inference/export review is now the primary proof-learning surface.
-  return '';
+  const row=wave3PendingProofPromptCandidate();
+  if(!row) return '';
+  const a=row.action;
+  const id=JSON.stringify(a.id||'');
+  const date=JSON.stringify(row.date||todayKey());
+  const move=String(a.move||'this move');
+  return `<div class="wave3ProofPrompt" onclick="event.stopPropagation()"><div class="tiny"><b>Did this help?</b></div><div class="wave3ProofMove">${esc(move)}</div><div class="chips"><button class="btn small logged" onclick='recordWave3ProofOutcome(${id},${date},"helped")'>Helped</button><button class="btn small" onclick='recordWave3ProofOutcome(${id},${date},"unsure")'>Not sure</button><button class="btn small" onclick='recordWave3ProofOutcome(${id},${date},"did_not_help")'>Did not help</button></div></div>`;
 }
 function recordWave3ProofOutcome(actionId,dateKey,status){
   if(!['helped','unsure','did_not_help'].includes(status)) return;
@@ -9218,6 +9303,7 @@ function recordWave3ProofOutcome(actionId,dateKey,status){
   save();
   render();
 }
+
 var WAVE3B_PROFILE_CACHE=null;
 function wave3BNumber(v){if(v===null||v===undefined||v==='') return null; const n=Number(v); return Number.isFinite(n)?n:null;}
 function wave3BMetricKeys(){return ['score','energy','mood','focus','drive','stress','overwhelm','irritability'];}
@@ -9518,19 +9604,24 @@ function wave3ProofFitForCandidate(cand={},contextKey='',fc=null){
     if(!p || !p.checked) return;
     let part=0;
     if(p.checked>=3){
-      if(p.helpRate>=65) part+=p.confidence==='Strong signal'?0.8:0.45;
-      if(p.helpRate<=25) part-=p.confidence==='Strong signal'?0.65:0.35;
+      if(p.helpRate>=65) part+=p.confidence==='Strong signal'?0.45:0.25;
+      if(p.helpRate<=25) part-=p.confidence==='Strong signal'?0.38:0.22;
     }else if(p.checked>=1 && p.helpRate>=80){
-      part+=0.15;
+      part+=0.08;
     }
     const matchCount=contextTags.filter(t=>p.contextTags?.[t]).length;
-    if(matchCount && p.helpRate>=65 && p.checked>=2) part+=Math.min(.3,matchCount*.1);
+    if(matchCount && p.helpRate>=65 && p.checked>=2) part+=Math.min(.16,matchCount*.05);
     if(Math.abs(part)>Math.abs(bonus)){profile=p;}
     bonus+=part;
-    if(part) reasons.push(`${p.label}: ${p.helpRate}% helped (${p.checked})`);
+    if(part) reasons.push(`${p.label}: ${p.helpRate}% likely helped (${p.checked})`);
   });
-  bonus=Math.max(-.8,Math.min(1.0,bonus));
-  return {bonus:Math.round(bonus*10)/10,profile,reasons:reasons.slice(0,3),checked:profiles.checkedCount,confidence:profiles.confidence};
+  // Automatic outcome inference is the main signal. Manual effectCheck is already folded in only as a weak modifier.
+  const auto=wave3BAutomaticOutcomeFitForCandidate(cand,contextKey,fc);
+  bonus+=auto.bonus||0;
+  if(auto.profile && Math.abs(auto.bonus||0)>=Math.abs(bonus)) profile=auto.profile;
+  reasons=reasons.concat(auto.reasons||[]);
+  bonus=Math.max(-.55,Math.min(.65,bonus));
+  return {bonus:Math.round(bonus*10)/10,profile,reasons:reasons.slice(0,3),checked:profiles.checkedCount,confidence:profiles.confidence,automaticOutcome: auto};
 }
 function forecastActionLifecycle(a){
   if(!a) return 'unknown';
@@ -10051,8 +10142,7 @@ function buildForecastMoveExport(entries){
   const counts={started:0,done:0,expired:0,undone:0};
   const effectCounts={pending:0,ready:0,delayed:0,checked:0};
   actions.forEach(a=>{const st=forecastActionLifecycle(a); counts[st]=(counts[st]||0)+1; const es=forecastEffectCheckStatus(a); if(es in effectCounts) effectCounts[es]++;});
-  const automaticOutcomeLearning=buildWave3BAutomaticOutcomeLearning(actions,{limit:120});
-  return {total:actions.length,completed:counts.done||0,counts,dismissed:dismissals.length,recentDismissals:dismissals.slice(-30),effectChecks:effectCounts,effectiveness:stats,proofProfiles:buildMoveEffectProfiles(actions),wave3ProofLearning:buildWave3MoveEffectProfiles(actions),automaticOutcomeLearning,recent:actions.slice(-30)};
+  return {total:actions.length,completed:counts.done||0,counts,dismissed:dismissals.length,recentDismissals:dismissals.slice(-30),effectChecks:effectCounts,effectiveness:stats,proofProfiles:buildMoveEffectProfiles(actions),wave3ProofLearning:buildWave3MoveEffectProfiles(actions),automaticOutcomeLearning:buildWave3BAutomaticOutcomeLearning(actions,{limit:120}),recent:actions.slice(-30)};
 }
 
 
@@ -11620,7 +11710,7 @@ function presenceBestRepRecommendation(ctx=null){
 function renderPresenceLevel5Card(){
   const d=day(), p=ensurePresenceFields(d), prof=presenceReadinessProfile(recentEntries(7)), rec=presenceBestRepRecommendation(buildForecastContext(day()));
   const btns=presenceRepOptions().map(o=>`<button type="button" class="btn small ${p[o.key]?'primary':''}" onclick="logPresenceRep('${o.key}')">${p[o.key]?'✓ ':''}${esc(o.label)}</button>`).join('');
-  return `<div class="card span12" id="guide-presence-level5"><div class="row"><h2>Presence / Social Confidence</h2><span class="chip ${prof.current.score>=5?'good':prof.current.score>=2?'warn':''}">${esc(prof.current.stage)}</span></div><div class="grid"><div class="card span5"><h3>Best rep now</h3><div class="quote">${esc(rec.text)}</div>${rec.key==='presenceNote'?`<textarea placeholder="Grounded / self-respect note..." onchange="setPresenceText('presenceNote',this.value)">${esc(p.presenceNote||'')}</textarea>`:`<button class="btn small primary" onclick="logPresenceRep('${rec.key}')">Do / log this rep</button>`}<div class="chips" style="margin-top:8px"><span class="chip">Clean ${prof.rates.clean}%</span><span class="chip">Visible ${prof.rates.visible}%</span><span class="chip">Warm ${prof.rates.conversation}%</span><span class="chip">Self-respect ${prof.rates.selfRespect}%</span></div></div><div class="card span7" id="guide-social-reps"><h3>Presence reps</h3><div class="chips">${btns}</div><p class="tiny">Low pressure only.</p></div></div></div>`;
+  return `<div class="card span12" id="guide-presence-level5"><div class="row"><h2>Presence / Social Confidence</h2><span class="chip ${prof.current.score>=5?'good':prof.current.score>=2?'warn':''}">${esc(prof.current.stage)}</span></div><p class="tiny">Low-pressure confidence reps. Clean, visible, warm, playful, and self-respecting — no chasing, no performance.</p><div class="grid"><div class="card span5"><h3>Best rep now</h3><div class="quote">${esc(rec.text)}</div>${rec.key==='presenceNote'?`<textarea placeholder="Grounded / self-respect note..." onchange="setPresenceText('presenceNote',this.value)">${esc(p.presenceNote||'')}</textarea>`:`<button class="btn small primary" onclick="logPresenceRep('${rec.key}')">Do / log this rep</button>`}<div class="chips" style="margin-top:8px"><span class="chip">Clean ${prof.rates.clean}%</span><span class="chip">Visible ${prof.rates.visible}%</span><span class="chip">Warm ${prof.rates.conversation}%</span><span class="chip">Self-respect ${prof.rates.selfRespect}%</span></div></div><div class="card span7" id="guide-social-reps"><h3>Presence reps</h3><div class="chips">${btns}</div><p class="tiny">Low energy = clean or self-respect. High energy = visible, warm, or playful.</p></div></div></div>`;
 }
 
 
@@ -11817,207 +11907,6 @@ function buildMoodTimelineExport(entries){
   };
 }
 
-
-
-function wave5KnownCleanupItems(){
-  return [
-    {
-      key:'wave3b_outcome_inference',
-      status:'planned_not_started',
-      item:'Remove or hide the manual “Did this help?” prompt from the daily command screen and make proof learning mostly automatic through future data/outcome inference. Manual feedback should remain optional and secondary.'
-    },
-    {
-      key:'wave6_final_simplification',
-      status:'future_wave',
-      item:'Final speed/friction/removal pass: hide, merge, or remove anything that does not improve the next best move.'
-    }
-  ];
-}
-function wave5ClampScore(n){
-  n=Number(n);
-  if(!Number.isFinite(n)) return null;
-  return Math.max(0,Math.min(100,Math.round(n)));
-}
-function wave5Letter(score){
-  score=Number(score);
-  if(!Number.isFinite(score)) return 'N/A';
-  if(score>=97) return 'A+';
-  if(score>=93) return 'A';
-  if(score>=90) return 'A-';
-  if(score>=87) return 'B+';
-  if(score>=83) return 'B';
-  if(score>=80) return 'B-';
-  if(score>=77) return 'C+';
-  if(score>=73) return 'C';
-  if(score>=70) return 'C-';
-  if(score>=60) return 'D';
-  return 'F';
-}
-function wave5GradeLabel(score){
-  score=Number(score);
-  if(!Number.isFinite(score)) return 'Not enough data';
-  if(score>=95) return 'Elite / Level 5';
-  if(score>=90) return 'Excellent';
-  if(score>=80) return 'Strong but improvable';
-  if(score>=70) return 'Good foundation but incomplete';
-  if(score>=60) return 'Average / needs clearer systems';
-  return 'Weak or underdeveloped';
-}
-function wave5Avg(values){
-  const nums=(values||[]).map(Number).filter(n=>Number.isFinite(n));
-  return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null;
-}
-function wave5PctLabel(v){return Number.isFinite(Number(v))?`${Math.round(Number(v))}%`:'n/a'}
-function buildWave5SystemGradeSummary(entries,grades){
-  let score=null;
-  try{
-    if(grades && Number.isFinite(Number(grades.overallLevel))) score=Number(grades.overallLevel)*20;
-    else if(grades && Array.isArray(grades.domains)) score=wave5Avg(grades.domains.map(d=>Number(d.level)*20));
-  }catch(e){}
-  score=wave5ClampScore(score ?? 88);
-  const domains=Array.isArray(grades?.domains)?grades.domains:[];
-  const strongest=domains.filter(d=>Number(d.level)>=4.6).slice(0,8).map(d=>({key:d.key,title:d.title,level:d.level,label:d.levelLabel||''}));
-  const weak=domains.filter(d=>Number(d.level)<4.2).slice(0,8).map(d=>({key:d.key,title:d.title,level:d.level,missingPiece:d.missingPiece||''}));
-  return {
-    score,
-    letter:wave5Letter(score),
-    label:wave5GradeLabel(score),
-    definition:'System Grade measures app intelligence, adaptive logic, design quality, exports, safeguards, and whether complexity stays hidden from the daily screen.',
-    reason:'The system is graded separately from life outcomes. A high system grade means the app is smart and well-structured; it does not prove real-life improvement by itself.',
-    strongestSystems:strongest,
-    weakSystems:weak.length?weak:(grades?.topGaps||[]).slice(0,5),
-    currentMaturity:grades?.overallLevel||null,
-    currentMaturityLabel:grades?.overallLabel||''
-  };
-}
-function buildWave5OutcomeGradeSummary(entries){
-  const logged=(entries||[]).filter(e=>e&&e.data);
-  const scores=logged.map(e=>scoreDay(e.data));
-  const safeRate=(path)=>{try{return yesRate(entries,path)}catch(e){return 0}};
-  let body={rates:{}}, sleep={rates:{}}, azure={rates:{}}, father={rates:{}}, presence={rates:{}};
-  try{body=bodyPhysicalPeakProfile(entries)||body;}catch(e){}
-  try{sleep=sleepRecoveryOverview(entries)||sleep;}catch(e){}
-  try{azure=azureCareerLevel5Overview(entries)||azure;}catch(e){}
-  try{father=fatherhoodLevel5Profile(entries)||father;}catch(e){}
-  try{presence=presenceReadinessProfile(entries)||presence;}catch(e){}
-  let moneyRhythm={status:'unknown'}; try{moneyRhythm=moneyRhythmSummary()||moneyRhythm;}catch(e){}
-  const moneyRhythmScore=moneyRhythm.status==='current'?90:moneyRhythm.status==='due'?65:moneyRhythm.status==='overdue'?35:50;
-  const rates={
-    water:safeRate(['water']),
-    workout:safeRate(['workout']),
-    bodyMovement:Number(body?.rates?.anyMovement ?? safeRate(['workout'])),
-    recovery:safeRate(['health','rest']),
-    nightReset:safeRate(['night']),
-    phoneBoundary:Number(sleep?.rates?.phoneBoundary ?? 0),
-    azureStudy:safeRate(['azure']),
-    azureProof:Number(azure?.rates?.proofLogged ?? azure?.proofPercent ?? 0),
-    moneyCheck:safeRate(['money']),
-    moneyRhythm:moneyRhythmScore,
-    fatherhood:safeRate(['fatherCheck']),
-    social:safeRate(['socialCheck']),
-    home:safeRate(['home']),
-    faith:safeRate(['faith','faithRepLogged']) || safeRate(['faith','minimumRep'])
-  };
-  const averages={
-    energy:average(logged.map(e=>+e.data.energy)),
-    mood:average(logged.map(e=>+e.data.mood)),
-    sleepHours:average(logged.map(e=>+e.data.sleep)),
-    lifeScore:average(scores.map(s=>s.pct))
-  };
-  const bodyScore=wave5Avg([rates.water,rates.bodyMovement,rates.workout]);
-  const recoveryScore=wave5Avg([rates.nightReset,rates.phoneBoundary,rates.recovery]);
-  const careerScore=wave5Avg([rates.azureStudy,rates.azureProof]);
-  const moneyScore=wave5Avg([rates.moneyCheck,rates.moneyRhythm]);
-  const connectionScore=wave5Avg([rates.fatherhood,rates.social]);
-  const supportScore=wave5Avg([rates.home,rates.faith]);
-  const stabilityScore=wave5ClampScore(wave5Avg([
-    Number.isFinite(averages.energy)?averages.energy*10:null,
-    Number.isFinite(averages.mood)?averages.mood*10:null,
-    Number.isFinite(averages.lifeScore)?averages.lifeScore:null,
-    Number.isFinite(averages.sleepHours)?Math.min(100,averages.sleepHours/8*100):null
-  ]));
-  const weighted=wave5Avg([
-    bodyScore!=null?bodyScore*1.25:null,
-    recoveryScore!=null?recoveryScore*1.25:null,
-    careerScore!=null?careerScore*1.0:null,
-    moneyScore!=null?moneyScore*0.9:null,
-    connectionScore!=null?connectionScore*1.0:null,
-    supportScore!=null?supportScore*0.7:null,
-    stabilityScore!=null?stabilityScore*1.0:null
-  ]);
-  const score=wave5ClampScore(weighted ?? 70);
-  const allRates=[
-    ['water','Water',rates.water],['bodyMovement','Body movement',rates.bodyMovement],['workout','Workout',rates.workout],['nightReset','Night reset',rates.nightReset],['phoneBoundary','Phone boundary',rates.phoneBoundary],['azureStudy','Azure study',rates.azureStudy],['azureProof','Azure proof',rates.azureProof],['moneyCheck','Money check',rates.moneyCheck],['moneyRhythm','Money rhythm',rates.moneyRhythm],['fatherhood','Fatherhood',rates.fatherhood],['social','Social connection',rates.social],['home','Home reset',rates.home],['faith','Faith rep',rates.faith]
-  ];
-  const improvedAreas=allRates.filter(x=>Number(x[2])>=70).map(([key,label,value])=>({key,label,value:Math.round(value)}));
-  const driftingAreas=allRates.filter(x=>Number(x[2])<40).map(([key,label,value])=>({key,label,value:Math.round(value)}));
-  return {
-    score,
-    letter:wave5Letter(score),
-    label:wave5GradeLabel(score),
-    definition:'Outcome Grade measures whether real life data is improving: body consistency, recovery, Azure proof, money rhythm, fatherhood, faith, confidence/social presence, happiness, and daily use.',
-    reason:'A+ outcome status requires repeated real-world data, not just completed features. This grade should rise only when the logs improve over time.',
-    confidence:logged.length>=30?'Medium-high':logged.length>=14?'Medium':'Low',
-    daysLogged:logged.length,
-    averages,
-    rates,
-    domainScores:{body:wave5ClampScore(bodyScore),recovery:wave5ClampScore(recoveryScore),careerAzure:wave5ClampScore(careerScore),money:wave5ClampScore(moneyScore),connection:wave5ClampScore(connectionScore),homeFaith:wave5ClampScore(supportScore),stateStability:stabilityScore},
-    improvedAreas,
-    driftingAreas,
-    rule:'Do not call the app A+ from features alone. System Grade and Outcome Grade must both improve.'
-  };
-}
-function buildWave5GradeSummary(entries,daysBack,grades=null){
-  const g=grades||appCapabilityGrades(daysBack);
-  return {systemGrade:buildWave5SystemGradeSummary(entries,g),outcomeGrade:buildWave5OutcomeGradeSummary(entries)};
-}
-function buildWave5ExpertReviewSummary(entries,daysBack,gradeSummary,exportKind='life_update'){
-  const outcome=gradeSummary?.outcomeGrade||{};
-  const system=gradeSummary?.systemGrade||{};
-  const drifting=(outcome.driftingAreas||[]).slice(0,6);
-  const strong=(outcome.improvedAreas||[]).slice(0,6);
-  return {
-    mainRead:'Review the app as a Personal Peak OS. Separate app intelligence from real-world outcomes, identify the main bottleneck, and recommend fewer higher-leverage changes rather than more daily inputs.',
-    currentBaseFile:'Command_Center_wave6_speed_friction_cleanup.html',
-    currentWave:'Wave 3B — Automatic Outcome Inference / Hidden Manual Proof Prompt',
-    exportKind,
-    systemVsOutcome:{systemGrade:system.score,systemLetter:system.letter,outcomeGrade:outcome.score,outcomeLetter:outcome.letter},
-    strongestParts:strong.length?strong:[{label:'Not enough strong outcome signals yet',value:null}],
-    weakestOrMostIncompleteParts:drifting.length?drifting:[{label:'Not enough drift signals yet',value:null}],
-    nextTuningTargets:drifting.slice(0,5).map(x=>`Improve ${x.label} without adding visible daily pressure.`),
-    doNotOverbuildWarnings:[
-      'Do not add more sliders unless the missing signal directly improves the next best move.',
-      'Do not put expert/debug intelligence on the daily command screen.',
-      'Do not call the app A+ until the outcome grade improves from real logs.',
-      'Keep fatherhood and faith supportive; do not make them heavier.',
-      'Prefer hiding, merging, or exporting complexity over adding more visible cards.'
-    ],
-    knownCleanupItems:wave5KnownCleanupItems()
-  };
-}
-function buildWave5ExportHealth(exportType,daysBack,daysIncluded,mode='compact'){
-  let stateSize=0;
-  try{stateSize=JSON.stringify(state||{}).length;}catch(e){}
-  const isLevel5=String(exportType||'').toLowerCase().includes('level 5');
-  const isBackup=String(exportType||'').toLowerCase().includes('backup');
-  return {
-    generatedAt:new Date().toISOString(),
-    exportType,
-    range:daysBack==='all'?'all':daysBack,
-    daysIncluded:Number(daysIncluded)||0,
-    stateSizeKB:Math.round((stateSize/1024)*10)/10,
-    mobileSafe:!isLevel5 && !isBackup,
-    mode,
-    heavySectionsIncluded:isLevel5,
-    buildPolicy:'Heavy review data should build only after tapping an export button, not when the Data tab opens.',
-    warnings:[
-      daysBack==='all' && !isBackup ? 'Full-range exports can take longer on Android.' : '',
-      isLevel5 ? 'Level 5 Review intentionally includes deeper expert data and may take longer than Life Update.' : '',
-      isBackup ? 'Full Backup should remain a complete restorable state copy; do not treat it as the coaching review export.' : ''
-    ].filter(Boolean)
-  };
-}
-
 function buildLifeUpdate(daysBack=7){
   migrate(state);
   captureTodaySnapshot();
@@ -12041,10 +11930,6 @@ function buildLifeUpdate(daysBack=7){
   const adayaCats={}; Object.keys(ADAYA_CATEGORIES).forEach(cat=>adayaCats[cat]=categoryProgress(cat));
   const includePrivate=!!state.settings.includePrivatePatternInExports;
   const forecastDaily=logged.map(forecastDayExport).filter(Boolean);
-  const wave5Grades=buildWave5GradeSummary(entries,daysBack);
-  const wave5ExpertSummary=buildWave5ExpertReviewSummary(entries,daysBack,wave5Grades,'life_update');
-  const wave5ExportHealth=buildWave5ExportHealth('Life Update for ChatGPT',daysBack,logged.length,'compact');
-  const wave3BAutoLearning=buildWave3BAutomaticOutcomeLearning(allForecastActions(),{limit:90,compact:true});
   const recentRaw=logged.map(e=>({
     date:e.date,
     dailyEntry:sanitizeDayForExport(e.data,includePrivate),
@@ -12067,12 +11952,6 @@ function buildLifeUpdate(daysBack=7){
     timeZoneLabel:APP_TIME_ZONE_LABEL,
     range:daysBack==='all'?'All logged days':`Last ${daysBack} days`,
     daysLogged:logged.length,
-    wave5ExportReviewUpgrade:{version:'Wave 5',rule:'Daily app stays simple; exports carry the expert-review intelligence.'},
-    grades:wave5Grades,
-    expertReviewSummary:wave5ExpertSummary,
-    exportHealth:wave5ExportHealth,
-    knownCleanupItems:wave5KnownCleanupItems(),
-    automaticOutcomeLearning:{mode:wave3BAutoLearning.mode,evaluatedMoves:wave3BAutoLearning.evaluatedMoves,likelyHelped:wave3BAutoLearning.likelyHelped,unclear:wave3BAutoLearning.unclear,likelyDidNotHelp:wave3BAutoLearning.likelyDidNotHelp,notEnoughData:wave3BAutoLearning.notEnoughData,confidence:wave3BAutoLearning.confidence,rule:'Live/derived from future app data; manual feedback is optional and secondary.'},
     promptForChatGPT:'Use this export as context. Tell me the patterns you see, what I am doing well, where I am drifting, what I need to fix next, and give me a compact action plan for the next 7 days.',
     averages:{
       energy:average(logged.map(e=>+e.data.energy)),
@@ -12102,6 +11981,7 @@ function buildLifeUpdate(daysBack=7){
     uiSafety:uiSafetyProfile(entries),
     categoryScores:cats,
     nextBestAction:nextAction(),
+    automaticOutcomeLearning:buildWave3BAutomaticOutcomeLearning(logged.flatMap(e=>(e.data.forecastActions||[]).map(a=>({...a,date:a.date||e.date}))),{limit:120}),
     learningKnowledge:learningKnowledgeOverview(entries),
     azure:{
       careerLevel5:azureCareerLevel5Overview(entries),
@@ -12268,7 +12148,7 @@ function renderQuickMode(){
   const pfChip=pf?`<span class="chip ${pf.level==='Green'?'good':pf.level==='Yellow'?'warn':'bad'}">${pf.level} ${pf.score}%</span><span class="chip warn">${pf.confidence} confidence</span>`:'';
   return `<section class="section active" id="sec-quick">
     <div class="quickBanner">
-      <div class="kpi"><div><h2 style="margin-bottom:4px">Quick Mode</h2><div class="tiny">Shortcuts only — same fields, no extra tasks.</div></div><button class="btn small quickOn" onclick="toggleQuickMode()">Exit</button></div>
+      <div class="kpi"><div><h2 style="margin-bottom:4px">Quick Mode</h2><div class="tiny">Shortcut capture. These update the same fields from the tabs — they are not extra separate tasks.</div></div><button class="btn small quickOn" onclick="toggleQuickMode()">Exit</button></div>
       <div class="chips" style="margin-top:10px">${pfChip}<button class="btn small" onclick="quickPreset('minimum')">Minimum Day</button><button class="btn small" onclick="quickPreset('night')">Night Reset</button><button class="btn small primary" onclick="quickPreset('study')">Log Azure</button></div>
     </div>
     <div class="grid">
@@ -12279,14 +12159,14 @@ function renderQuickMode(){
         ${d.sleepSource==='night_inputs'?`<div class="tiny" style="margin-top:-4px;margin-bottom:8px">Synced from Pattern → Last night bedtime/wake time.</div>`:''}
         ${input('range','Overwhelm',t.overwhelm||5,'v=>{day().therapy.overwhelm=+v;day()._logged.therapyOverwhelm=true;save();render()}','min="1" max="10"','therapyOverwhelm')}
         ${input('range','Loneliness',t.loneliness||5,'v=>{day().therapy.loneliness=+v;day()._logged.therapyLoneliness=true;save();render()}','min="1" max="10"','therapyLoneliness')}`)}
-      ${quickBox('2. Core shortcuts', `
+      ${quickBox('2. Core Wins', `
         ${checkbox('Water / hydration',d.water,'v=>setDay("water",v)')}
         ${checkbox('Body movement / workout',d.workout,'v=>setDay("workout",v)')}
         ${checkbox('Azure study / lab',d.azure,'v=>setDay("azure",v)')}
         ${checkbox('Money check',d.money,'v=>setDay("money",v)')}
         ${checkbox('Adaya connection',d.fatherCheck,'v=>setDay("fatherCheck",v)')}
         ${checkbox('Home reset',d.home,'v=>setDay("home",v)')}
-        ${checkbox('Presence / social rep',d.socialCheck,'v=>setDay("socialCheck",v)')}
+        ${checkbox('Social / connection rep',d.socialCheck,'v=>setDay("socialCheck",v)')}
         ${checkbox('Night reset',d.night,'v=>setDay("night",v)')}`)}
       ${quickBox('3. Last Night / Pattern', `
         ${nightTargetControls()}
@@ -12338,7 +12218,7 @@ function renderQuickMode(){
         ${checkbox('Sunlight / outside',!!h.sunlight,'v=>{day().health.sunlight=v;save();render()}')}
         ${checkbox('Rest / recovery respected',!!h.rest,'v=>{day().health.rest=v;save();render()}')}
         ${checkbox('Fast food today',!!h.fastFood,'v=>{day().health.fastFood=v;save();render()}')}`)}
-      ${quickBox('9. Presence / Therapy', `
+      ${quickBox('9. Social / Therapy', `
         ${checkbox('One real conversation',!!s.realConversation,'v=>{day().social.realConversation=v;day().socialCheck=v||day().socialCheck;save();render()}')}
         ${checkbox('One self-respect action',!!s.selfRespect,'v=>{day().social.selfRespect=v;save();render()}')}
         ${input('range','Stress',t.stress||5,'v=>{day().therapy.stress=+v;day()._logged.therapyStress=true;save();render()}','min="1" max="10"','therapyStress')}
@@ -12353,13 +12233,18 @@ function renderQuickMode(){
 }
 
 function storageStatusHtml(){
-  const ok=browserStorageWorks();
+  const localOk=browserStorageWorks();
+  const sessionOk=sessionStorageWorks();
   const local=isLocalAppMode();
-  const cls=ok&&!local?'good':'';
-  const msg=local
-    ? 'Local HTML mode detected. Android may wipe cache when reopening from Downloads. Use Export Full Backup JSON before replacing or moving this file.'
-    : (ok?'Browser save is available.':'Browser storage is blocked. Use Backup JSON.');
-  return `<div class="storageStatus ${cls}"><b>Cache:</b> ${esc(ok?'active + father/Adaya vault':'blocked')}<br><span class="tiny">${esc(msg)}</span></div>`;
+  const cls=localOk&&!local?'good':'';
+  let msg='Browser save is available.';
+  if(local){
+    msg='Local HTML mode detected. Android content:// / Downloads storage can be volatile. Same-tab recovery is active; safest use is Full Backup JSON before closing/replacing the file.';
+  }else if(!localOk){
+    msg=sessionOk?'Browser localStorage is blocked. Same-tab recovery is active, but use Full Backup JSON for durable storage.':'Browser storage is blocked. Use Full Backup JSON for durable storage.';
+  }
+  const label=localOk&&!local?'active + father/Adaya vault':(sessionOk||local?'volatile / same-tab fallback':'blocked');
+  return `<div class="storageStatus ${cls}"><b>Cache:</b> ${esc(label)}<br><span class="tiny">${esc(msg)}</span></div>`;
 }
 function copyBackupJSON(){try{flushDeferredRecoveryWrites();}catch(e){}
   try{commitFocusedField(); save(true);}catch(e){}
@@ -12829,10 +12714,6 @@ function buildLevel5ReviewExport(daysBack=7){
   const currentForecast=peakForecast(day());
   const currentDisplay=peakForecastLevel5Display(currentForecast);
   const moves=buildForecastMoveExport(entries);
-  const wave5Grades=buildWave5GradeSummary(entries,daysBack,grades);
-  const wave5ExpertSummary=buildWave5ExpertReviewSummary(entries,daysBack,wave5Grades,'level5_review');
-  const wave5ExportHealth=buildWave5ExportHealth('Command Center Level 5 ChatGPT Review',daysBack,logged.length,'deep_review');
-  const automaticOutcomeLearning=buildWave3BAutomaticOutcomeLearning(allForecastActions(),{limit:140});
   const review={
     exportType:'Command Center Level 5 ChatGPT Review',
     generatedAt:new Date().toISOString(),
@@ -12840,12 +12721,6 @@ function buildLevel5ReviewExport(daysBack=7){
     range:daysBack,
     daysIncluded:logged.length,
     currentDate:todayKey(),
-    wave5ExportReviewUpgrade:{version:'Wave 5',rule:'Daily app stays simple; Level 5 Review carries the deeper expert/mastermind data.'},
-    grades:wave5Grades,
-    expertReviewSummary:wave5ExpertSummary,
-    exportHealth:wave5ExportHealth,
-    knownCleanupItems:wave5KnownCleanupItems(),
-    automaticOutcomeLearning,
     purpose:'Give ChatGPT enough structured context to review the app as a Personal Peak OS, identify the current limiting domains, and recommend the next practical upgrades without adding unnecessary input burden.',
     handoffPrompt:level5ReviewHandoffPackage(daysBack),
     reviewInstructions:{
@@ -12877,10 +12752,7 @@ function buildLevel5ReviewExport(daysBack=7){
       currentMainLimiter:currentDisplay.primaryBottleneck,
       currentBestLever:currentDisplay.bestLever,
       currentExpectedEffect:currentDisplay.expectedEffect,
-      currentCheckWindow:currentDisplay.checkWindow,
-      systemGrade:wave5Grades.systemGrade,
-      outcomeGrade:wave5Grades.outcomeGrade,
-      automaticOutcomeLearning:{mode:automaticOutcomeLearning.mode,evaluatedMoves:automaticOutcomeLearning.evaluatedMoves,likelyHelped:automaticOutcomeLearning.likelyHelped,unclear:automaticOutcomeLearning.unclear,likelyDidNotHelp:automaticOutcomeLearning.likelyDidNotHelp,notEnoughData:automaticOutcomeLearning.notEnoughData,confidence:automaticOutcomeLearning.confidence}
+      currentCheckWindow:currentDisplay.checkWindow
     },
     level5Domains:{
       appCapabilityGrades:grades,
@@ -12898,6 +12770,7 @@ function buildLevel5ReviewExport(daysBack=7){
     proofAndLearning:{
       forecastMoves:moves,
       proofProfiles:moves.proofProfiles||{},
+      automaticOutcomeLearning:moves.automaticOutcomeLearning||{},
       effectiveness:moves.effectiveness||{},
       recentActions:moves.recent||[],
       moveFitHistory:summarizeMoveFitHistory(forecastDaily)
@@ -13258,10 +13131,10 @@ function sleepTargetSettingsHtml(){
 
 function renderData(){
   const s=scoreDay(day());
-  return sectionWrap('data',`<div class="grid wave6CompactGrid">
-    <div class="card span12 wave6Compact">
+  return sectionWrap('data',`<div class="grid">
+    <div class="card span12">
       <h2>Data + Storage</h2>
-      <p class="tiny">Exports hold the deep review. Daily use stays light.</p>
+      <p class="tiny">Fast mode: Life Update exports are mobile-safe and build only when tapped. Heavy Level 5 review details stay in the separate Level 5 Review exports.</p><p class="tiny">Duplicate cleanup active: Quick Mode is shortcuts only, and Do Now candidates are grouped so near-duplicate moves do not compete on screen.</p>
       <div class="tiny" id="saveStatus"><span class="saveDot"></span>Auto-save active</div>
       <div class="exportProgressBox" id="exportProgressBox">
         <div class="exportProgressMeta"><span id="exportProgressText">Export ready</span><b class="exportProgressPct" id="exportProgressPct">0%</b></div>
@@ -13271,24 +13144,25 @@ function renderData(){
       </div>
       ${storageStatusHtml()}${sleepTargetSettingsHtml()}${dayRolloverSettingsHtml()}${autoBackupSettingsHtml()}
       <div class="stack">
-        <button type="button" class="btn primary" onclick="exportLifeUpdate(7);return false;">Life Update — 7 days</button>
-        <button type="button" class="btn" onclick="exportLifeUpdate(30);return false;">Life Update — 30 days</button>
-        <button type="button" class="btn" onclick="exportLifeUpdate('all');return false;">Life Update — Full</button>
-        <button type="button" class="btn" onclick="exportData();return false;">Full Backup JSON</button>
+        <button type="button" class="btn primary" onclick="exportLifeUpdate(7);return false;">Export Life Update for ChatGPT — 7 days</button>
+        <button type="button" class="btn" onclick="exportLifeUpdate(30);return false;">Export Life Update for ChatGPT — 30 days</button>
+        <button type="button" class="btn" onclick="exportLifeUpdate('all');return false;">Export Life Update for ChatGPT — Full</button>
+        <button type="button" class="btn" onclick="exportData();return false;">Export Full Backup JSON</button>
         <label class="btn small">Import JSON<input type="file" accept=".json" style="display:none" onchange="importData(this.files[0])"></label>
         <button type="button" class="btn danger" onclick="resetApp()">Reset App</button>
       </div>
-      <details style="margin-top:12px"><summary class="tiny">Today Small Wins</summary><div style="margin-top:8px">${Object.entries(s.cats).map(([k,v])=>`<div class="row"><span><i class="scoreDot ${v===2?'good':v===1?'warn':'bad'}"></i>${k}</span><b>${v}/2</b></div>`).join('')}</div></details>
+      <h3 style="margin-top:14px">Today Small Wins</h3>
+      ${Object.entries(s.cats).map(([k,v])=>`<div class="row"><span><i class="scoreDot ${v===2?'good':v===1?'warn':'bad'}"></i>${k}</span><b>${v}/2</b></div>`).join('')}
     </div>
-    <div class="card span12 wave6Compact">
-      <h2>Level 5 Review</h2>
-      <p class="tiny">Expert review builds only when tapped.</p>
+    <div class="card span12">
+      <h2>Level 5 Review Exports</h2>
+      <p class="tiny">These build only when tapped so this tab stays fast.</p>
       <div class="chips">
-        <button type="button" class="btn primary" onclick="exportLevel5Review(7)">Level 5 Review — 7 days</button>
-        <button type="button" class="btn" onclick="exportLevel5Review(30)">Level 5 Review — 30 days</button>
-        <button type="button" class="btn" onclick="exportLevel5Review('all')">Level 5 Review — Full</button>
+        <button type="button" class="btn primary" onclick="exportLevel5Review(7)">Export Level 5 Review — 7 days</button>
+        <button type="button" class="btn" onclick="exportLevel5Review(30)">Export Level 5 Review — 30 days</button>
+        <button type="button" class="btn" onclick="exportLevel5Review('all')">Export Level 5 Review — Full</button>
+        <button type="button" class="btn" onclick="exportPhase17Acceptance(7)">Export Phase 17 Acceptance</button>
       </div>
-      <details style="margin-top:10px"><summary class="tiny">More export checks</summary><div class="chips" style="margin-top:8px"><button type="button" class="btn" onclick="exportPhase17Acceptance(7)">Phase 17 Acceptance</button></div></details>
     </div>
   </div>`)
 }
