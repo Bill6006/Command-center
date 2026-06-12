@@ -924,6 +924,8 @@ function rawSaveStamp(raw){
     const obj=JSON.parse(raw);
     const stamps=[obj._savedAt, obj._lastSaveAt, obj._inputUpdatedAt, obj.settings?.autoBackupLastAt];
     let times=stamps.map(stampFromIso).filter(Boolean);
+    const guideStamp=guideCompletionStampFromSettings(obj.settings);
+    if(guideStamp) times.push(guideStamp);
     if(obj.days){Object.values(obj.days).forEach(d=>times.push(daySaveStamp(d)));}
     return times.length?Math.max(...times):0;
   }catch(e){return 0;}
@@ -1093,9 +1095,62 @@ function meaningfulDayStamp(d){
     return Math.max(0,...times);
   }catch(e){return 0;}
 }
+
+function dateKeyMiddayStamp(k){
+  try{
+    if(!k) return 0;
+    const d=new Date(String(k)+'T12:00:00');
+    const t=d.getTime();
+    return Number.isNaN(t)?0:t;
+  }catch(e){return 0;}
+}
+function guideCompletionStampFromSettings(settings){
+  try{
+    const s=settings||{};
+    const stamps=[
+      s.lastMorningGuideCompletedAt,
+      s.lastAfternoonGuideCompletedAt,
+      s.lastEveningGuideCompletedAt,
+      s.lastSmartCheckInCompletedAt,
+      s.lastGuideCompletedAt
+    ].map(stampFromIso).filter(Boolean);
+    stamps.push(dateKeyMiddayStamp(s.lastMorningGuideCompletedDay));
+    stamps.push(dateKeyMiddayStamp(s.lastAfternoonGuideCompletedDay));
+    stamps.push(dateKeyMiddayStamp(s.lastEveningGuideCompletedDay));
+    return stamps.length?Math.max(...stamps):0;
+  }catch(e){return 0;}
+}
+function copyGuideCompletionIfNewer(targetSettings, sourceSettings, period){
+  try{
+    const t=targetSettings||{}; const s=sourceSettings||{};
+    const cap=period.charAt(0).toUpperCase()+period.slice(1);
+    const dayKey='last'+cap+'GuideCompletedDay';
+    const atKey='last'+cap+'GuideCompletedAt';
+    const sourceStamp=Math.max(stampFromIso(s[atKey]), dateKeyMiddayStamp(s[dayKey]));
+    const targetStamp=Math.max(stampFromIso(t[atKey]), dateKeyMiddayStamp(t[dayKey]));
+    if(sourceStamp && sourceStamp>=targetStamp){
+      if(s[dayKey]) t[dayKey]=s[dayKey];
+      if(s[atKey]) t[atKey]=s[atKey];
+    }
+  }catch(e){}
+}
+function mergeGuideCompletionSettings(targetSettings, sourceSettings){
+  const out=Object.assign({}, targetSettings||{});
+  ['morning','afternoon','evening'].forEach(p=>copyGuideCompletionIfNewer(out, sourceSettings||{}, p));
+  try{
+    const s=sourceSettings||{};
+    if(stampFromIso(s.lastSmartCheckInCompletedAt)>=stampFromIso(out.lastSmartCheckInCompletedAt)){
+      if(s.lastSmartCheckInCompletedAt) out.lastSmartCheckInCompletedAt=s.lastSmartCheckInCompletedAt;
+      if(s.lastSmartCheckInCompletedSourcePeriod) out.lastSmartCheckInCompletedSourcePeriod=s.lastSmartCheckInCompletedSourcePeriod;
+    }
+  }catch(e){}
+  return out;
+}
 function meaningfulStateStamp(s){
   try{
     const stamps=[s?._inputUpdatedAt,s?._lastMeaningfulInputAt].map(stampFromIso).filter(Boolean);
+    const guideStamp=guideCompletionStampFromSettings(s?.settings);
+    if(guideStamp) stamps.push(guideStamp);
     Object.values(s?.days||{}).forEach(d=>stamps.push(meaningfulDayStamp(d)));
     return stamps.length?Math.max(...stamps):0;
   }catch(e){return 0;}
@@ -1145,6 +1200,10 @@ function mergeStatesNewestWins(localState, savedState){
     if(activeTab) merged.settings.activeTab=activeTab;
     if(guide) merged.settings.guideState=guide;
   }
+  // Guide-completion flags live in settings rather than days, so preserve them by their own stamps.
+  // This prevents a newer Evening/Morning/Afternoon Done flag from being lost when saved-state
+  // candidates are merged after refresh/reload.
+  merged.settings=mergeGuideCompletionSettings(mergeGuideCompletionSettings(merged.settings||{}, localState.settings||{}), savedState.settings||{});
   if(savedState.adaya && shouldUseImportedAdaya(merged.adaya, savedState.adaya)) merged.adaya=deepClone(savedState.adaya);
   if(stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
   return migrate(merged);
@@ -1516,7 +1575,7 @@ function save(skipSnapshot=false){
   const now=new Date().toISOString();
   state._savedAt=now;
   markExpiredForecastActions();
-  state._schemaVersion='v278-persistence-bugfix-local-html-tab-recovery';
+  state._schemaVersion='v279-guide-completion-persistence-bugfix';
   autoCompleteDueForecastEffectsSilently();
   if(state.days?.[todayKey()]){
     state.days[todayKey()]._savedAt=now;
@@ -2981,6 +3040,12 @@ function completeGuide(){
   const completedAt=new Date().toISOString();
   if(donePeriod==='weekly'){migrate(state); state.adaya.weekly=state.adaya.weekly||{}; state.adaya.weekly.lastGuideCompletedWeek=weekStartKey(todayKey()); state.adaya.weekly.lastGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='morning'){state.settings=state.settings||{}; state.settings.lastMorningGuideCompletedDay=todayKey(); state.settings.lastMorningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='afternoon'){state.settings=state.settings||{}; state.settings.lastAfternoonGuideCompletedDay=todayKey(); state.settings.lastAfternoonGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='evening'){state.settings=state.settings||{}; state.settings.lastEveningGuideCompletedDay=todayKey(); state.settings.lastEveningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='smart'){state.settings=state.settings||{}; state.settings.lastSmartCheckInCompletedAt=completedAt; state.settings.lastSmartCheckInCompletedSourcePeriod=guideState?.sourcePeriod||currentGuidePeriod().key; save(true);}
   guideState=null;
+  state.settings=state.settings||{};
+  state.settings.guideState=null;
+  try{markInputUpdated(completedAt);}catch(e){}
+  // Save once more after clearing guideState so the durable state has the completed badge
+  // and does not rely on an in-progress guide snapshot.
+  try{save(true);}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
   persistGuideState();
   const box=document.getElementById('guideControls');
   if(box){
