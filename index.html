@@ -3923,7 +3923,6 @@ function renderTodayCommandCard(){
     </div>
     <div class="commandDoNow"><b>Do Now</b>${esc(c.doNow)}</div>
     ${forecastMoveControls(f,displayMove)}
-    ${renderWave3ProofPrompt()}
     <details class="forecastDetails" style="margin-top:10px">
       <summary class="tiny">Why this command?</summary>
       <div class="commandMeta"><span class="chip">Effect: ${esc(c.expectedEffect)}</span><span class="chip warn">Confidence: ${esc(c.confidence)}</span></div>
@@ -9544,13 +9543,9 @@ function wave3PendingProofPromptCandidate(){
   }catch(e){return null;}
 }
 function renderWave3ProofPrompt(){
-  const row=wave3PendingProofPromptCandidate();
-  if(!row) return '';
-  const a=row.action;
-  const id=JSON.stringify(a.id||'');
-  const date=JSON.stringify(row.date||todayKey());
-  const move=String(a.move||'this move');
-  return `<div class="wave3ProofPrompt" onclick="event.stopPropagation()"><div class="tiny"><b>Did this help?</b></div><div class="wave3ProofMove">${esc(move)}</div><div class="chips"><button class="btn small logged" onclick='recordWave3ProofOutcome(${id},${date},"helped")'>Helped</button><button class="btn small" onclick='recordWave3ProofOutcome(${id},${date},"unsure")'>Not sure</button><button class="btn small" onclick='recordWave3ProofOutcome(${id},${date},"did_not_help")'>Did not help</button></div></div>`;
+  // Wave 3B behavior: manual feedback is preserved in old data paths,
+  // but it must not render as a daily Today > Do Now prompt.
+  return '';
 }
 function recordWave3ProofOutcome(actionId,dateKey,status){
   if(!['helped','unsure','did_not_help'].includes(status)) return;
