@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center v279</title>
+<title>Tyree Life Command Center v282 perf3</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -13,7 +13,7 @@
 }
 [data-theme="light"]{--bg:#f5f7fb;--panel:#ffffff;--panel2:#f0f4fa;--text:#121826;--muted:#657386;--line:#dbe3ee;--accent:#2257c7;--gold:#996b17;--green:#15803d;--red:#be123c;--orange:#c2410c;--blue:#0369a1;--shadow:0 10px 24px rgba(18,24,38,.08)}
 *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif} body{padding-bottom:84px}
-.app{max-width:1120px;margin:0 auto;padding:14px}.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg),rgba(13,17,23,.88));backdrop-filter:blur(10px);padding:12px 0 8px}.brand{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.brand h1{font-size:1.35rem;margin:0}.brand .sub{color:var(--muted);font-size:.84rem;margin-top:3px}.lastUpdatedBadge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;border:1px solid var(--line);background:rgba(110,168,254,.08);border-radius:999px;padding:4px 8px;color:var(--muted);font-size:.72rem;font-weight:800;white-space:nowrap}.lastUpdatedBadge .saveDot{margin-right:0}.pill{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:7px 10px;color:var(--text);font-size:.82rem;white-space:nowrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:9px 11px;font-weight:700;cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--accent),#7c3aed);border:0;color:white}.btn.logged{background:linear-gradient(135deg,var(--green),#14b8a6);border:0;color:#04130a}.btn.danger{background:rgba(251,113,133,.12);border-color:rgba(251,113,133,.35);color:var(--red)}.btn.small{font-size:.78rem;padding:6px 8px;border-radius:9px}.btn.quickOn{background:linear-gradient(135deg,var(--green),#14b8a6);border-color:transparent;color:#04130a}.quickBanner{border:1px solid rgba(110,168,254,.35);background:linear-gradient(180deg,rgba(110,168,254,.12),rgba(20,30,44,.35));border-radius:18px;padding:12px;margin-bottom:12px}.guideControls{position:fixed;right:12px;bottom:78px;z-index:90;max-width:min(380px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:var(--shadow)}.guideControls.show{display:block}.guideControls .guideTitle{font-weight:900;margin-bottom:4px}.guideControls .guideNote{color:var(--muted);font-size:.8rem;line-height:1.35}.guideTarget{outline:2px solid rgba(110,168,254,.85);box-shadow:0 0 0 5px rgba(110,168,254,.18),var(--shadow)!important}.btn.guideOn{background:linear-gradient(135deg,var(--orange),var(--gold));border-color:transparent;color:#190b02}.tabs{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}.tab{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:8px 11px;font-size:.82rem;font-weight:800;cursor:pointer}.tab.active{background:var(--accent);color:white;border-color:transparent}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.card{grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}@media(min-width:760px){.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span3{grid-column:span 3}.span9{grid-column:span 9}}
+.app{max-width:1120px;margin:0 auto;padding:14px}.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg),rgba(13,17,23,.88));backdrop-filter:blur(10px);padding:12px 0 8px}.brand{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.brand h1{font-size:1.35rem;margin:0}.brand .sub{color:var(--muted);font-size:.84rem;margin-top:3px}.lastUpdatedBadge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;border:1px solid var(--line);background:rgba(110,168,254,.08);border-radius:999px;padding:4px 8px;color:var(--muted);font-size:.72rem;font-weight:800;white-space:nowrap}.lastUpdatedBadge .saveDot{margin-right:0}.pill{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:7px 10px;color:var(--text);font-size:.82rem;white-space:nowrap}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:9px 11px;font-weight:700;cursor:pointer}.btn,.tab,.check,input[type=range]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.btn.primary{background:linear-gradient(135deg,var(--accent),#7c3aed);border:0;color:white}.btn.logged{background:linear-gradient(135deg,var(--green),#14b8a6);border:0;color:#04130a}.btn.danger{background:rgba(251,113,133,.12);border-color:rgba(251,113,133,.35);color:var(--red)}.btn.small{font-size:.78rem;padding:6px 8px;border-radius:9px}.btn.quickOn{background:linear-gradient(135deg,var(--green),#14b8a6);border-color:transparent;color:#04130a}.quickBanner{border:1px solid rgba(110,168,254,.35);background:linear-gradient(180deg,rgba(110,168,254,.12),rgba(20,30,44,.35));border-radius:18px;padding:12px;margin-bottom:12px}.guideControls{position:fixed;right:12px;bottom:78px;z-index:90;max-width:min(380px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:var(--shadow)}.guideControls.show{display:block}.guideControls .guideTitle{font-weight:900;margin-bottom:4px}.guideControls .guideNote{color:var(--muted);font-size:.8rem;line-height:1.35}.guideTarget{outline:2px solid rgba(110,168,254,.85);box-shadow:0 0 0 5px rgba(110,168,254,.18),var(--shadow)!important}.btn.guideOn{background:linear-gradient(135deg,var(--orange),var(--gold));border-color:transparent;color:#190b02}.tabs{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}.tab{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:8px 11px;font-size:.82rem;font-weight:800;cursor:pointer}.tab.active{background:var(--accent);color:white;border-color:transparent}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.card{grid-column:span 12;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}@media(min-width:760px){.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span3{grid-column:span 3}.span9{grid-column:span 9}}
 h2{font-size:1.02rem;margin:0 0 9px} h3{font-size:.92rem;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.muted{color:var(--muted)}.tiny{font-size:.78rem;color:var(--muted)}.goalAmt{color:var(--gold);font-weight:900;margin-left:6px;white-space:nowrap}.kpi{display:flex;align-items:center;justify-content:space-between;gap:10px}.kpi .num{font-size:1.65rem;font-weight:900}.bar{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));width:0%}.bar.warn>i{background:linear-gradient(90deg,var(--orange),var(--gold))}.bar.danger>i{background:linear-gradient(90deg,var(--red),var(--orange))}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:7px 0}.stack{display:flex;flex-direction:column;gap:8px}.chips{display:flex;gap:7px;flex-wrap:wrap}.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:.79rem;color:var(--muted)}.chip.good{color:var(--green);border-color:rgba(74,222,128,.38)}.chip.warn{color:var(--gold);border-color:rgba(214,168,79,.38)}.chip.bad{color:var(--red);border-color:rgba(251,113,133,.38)}.forecastLine{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.infoBtn{width:22px;height:22px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-weight:900;line-height:1;cursor:pointer}.forecastInfoBox{margin-top:7px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px 10px;color:var(--muted);font-size:.82rem;line-height:1.35}
 input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--text);padding:9px 10px;font:inherit}textarea{min-height:80px;resize:vertical}.field{display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin:7px 0}.field label{font-size:.86rem;color:var(--muted)}.timeField{grid-template-columns:1fr}.timeTextWrap{display:grid;gap:7px}.timeTextRow{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.timeTextRow input{min-height:46px}.timeChipRow{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}.timeChipRow::-webkit-scrollbar{display:none}.timeChipRow .btn{flex:0 0 auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.timeHelp{font-size:.76rem;color:var(--muted)}.timeHelp.warn{color:var(--gold)}.timeClear{justify-self:start}.saveDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px}.rangeQuickChips{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}.rangeQuickChips::-webkit-scrollbar{display:none}.rangeQuickChips button{flex:0 0 auto;border:1px solid var(--line);background:rgba(110,168,254,.08);color:var(--muted);border-radius:999px;padding:6px 8px;font-size:.74rem;font-weight:800}.rangeQuickChips button:hover,.rangeQuickChips button:focus{color:var(--text);border-color:rgba(110,168,254,.55)}.rangeField{display:flex;flex-direction:column;gap:8px;margin:10px 0}.rangeField.rangeUnlogged{border:1px dashed rgba(214,168,79,.55);background:rgba(214,168,79,.07);border-radius:14px;padding:9px}.rangeField.rangeLogged{border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.045);border-radius:14px;padding:9px}.rangeHead{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.86rem;gap:8px}.rangeLabelLine{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.rangeBadge{font-size:.68rem;font-weight:900;border-radius:999px;padding:3px 7px;white-space:nowrap}.rangeUndo{font-size:.68rem;padding:3px 7px;border-radius:999px}.rangeBadge.todo{color:var(--gold);border:1px solid rgba(214,168,79,.45);background:rgba(214,168,79,.10)}.rangeBadge.done{color:var(--green);border:1px solid rgba(74,222,128,.40);background:rgba(74,222,128,.09)}.rangeHint{font-size:.72rem;color:var(--gold);margin-top:-5px}.rangeField.rangeLogged .rangeHint{display:none}.rangeField.rangeUnlogged input[type=range]{opacity:.72}.rangeField.rangeUnlogged .rangeVal{color:var(--gold);border-color:rgba(214,168,79,.45)}.rangeVal{min-width:34px;text-align:center;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:999px;padding:3px 8px;font-weight:900}.rangeField input[type=range]{width:100%}.check{display:flex;gap:9px;align-items:center;margin:7px 0;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}.check input{width:auto}.section{display:none}.section.active{display:block}.mini-list{margin:0;padding-left:18px}.mini-list li{margin:4px 0}.meterLine{display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center;margin:6px 0}.statusGrid{display:grid;grid-template-columns:1fr;gap:8px}@media(min-width:720px){.statusGrid{grid-template-columns:1fr 1fr}}.statusItem{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:10px}.statusItem .title{font-weight:800;margin-bottom:6px}.quote{border-left:3px solid var(--accent);padding:8px 10px;background:var(--panel2);border-radius:0 12px 12px 0;color:var(--muted)}.bottomNav{position:fixed;left:0;right:0;bottom:0;background:rgba(13,17,23,.94);border-top:1px solid var(--line);padding:8px 8px 10px;display:flex;gap:7px;overflow-x:auto;z-index:50;backdrop-filter:blur(12px)}[data-theme="light"] .bottomNav{background:rgba(245,247,251,.94)}.bottomNav button{flex:0 0 auto}.hidden{display:none!important}.scoreDot{height:9px;width:9px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px}.scoreDot.good{background:var(--green)}.scoreDot.warn{background:var(--gold)}.scoreDot.bad{background:var(--red)}.compactReasons .chip{padding:5px 8px;font-size:.76rem}.reasonGroups{display:grid;gap:10px}.reasonGroup h3{font-size:.72rem;margin:0 0 5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.reasonGroup .chips{margin-bottom:0}.saveDot{display:inline-block;height:8px;width:8px;border-radius:50%;background:var(--green);margin-right:6px}.saveDot.warn{background:var(--gold)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}@media(max-width:520px){.two,.three{grid-template-columns:1fr}.field{grid-template-columns:1fr}.brand{flex-direction:column}.kpi .num{font-size:1.35rem}}
 
@@ -324,6 +324,41 @@ let lastSaveAt = null;
 let lastInputUpdatedAt = null;
 let pendingInputUpdate=false;
 let pendingInputUpdateAt=null;
+let inputUpdatedStampCache=0;
+let inputUpdatedStampCacheReady=false;
+let renderFullMigrateLastAt=0;
+let navTabsBuilt=false;
+function renderCacheGet(key,fn){
+  try{
+    const c=window.__tlccRenderCache;
+    if(c && Object.prototype.hasOwnProperty.call(c,key)) return c[key];
+    const v=fn();
+    if(c) c[key]=v;
+    return v;
+  }catch(e){return fn();}
+}
+function invalidateDerivedCaches(){
+  // Data-integrity fix: any real input can change forecast/export/guide reads.
+  try{window.__tlccRenderCache={};}catch(e){}
+  try{inputUpdatedStampCacheReady=false;}catch(e){}
+}
+function ensureLightStateForRender(){
+  if(!state||typeof state!=='object') state=loadState();
+  const now=Date.now();
+  // Full migration walks every saved day. Do it on load/import/export, not every tap/render.
+  if(!renderFullMigrateLastAt || now-renderFullMigrateLastAt>15000){
+    state=migrate(state);
+    renderFullMigrateLastAt=now;
+  }else{
+    state.settings=state.settings||{};
+    state.days=state.days||{};
+    state.azure=state.azure||{skills:{},claims:{}};
+    state.adaya=state.adaya||{skills:{},customSkills:[],weekly:{}};
+    const k=todayKey();
+    if(state.days[k]) migrateDay(state.days[k]);
+  }
+  return state;
+}
 const tabs = [
   ['today','Today'],['azure','Azure'],['money','Money'],['father','Father'],['faith','Faith'],['health','Health'],['pattern','Pattern'],['social','Love/Social'],['therapy','Therapy'],['week','Week'],['vision','Vision'],['data','Data']
 ];
@@ -750,8 +785,8 @@ function maybeAutoBackupDownload(userGesture=false){
     }catch(err){}
   }
 }
-async function downloadBackupNow(source='manual'){try{flushDeferredRecoveryWrites();}catch(e){}
-  try{commitFocusedField();}catch(e){}
+async function downloadBackupNow(source='manual'){
+  try{commitFocusedField(); commitPendingRangeDrafts('backup-export',{save:false}); save(true); flushPendingSaveNow('export'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){}
   if(!startExportProgress(source==='manual'?'Starting backup export...':'Starting auto backup...')) return;
   autoBackupBusy=true;
   try{
@@ -861,9 +896,9 @@ function flushDeferredRecoveryWrites(){
   }catch(e){}
 }
 try{
-  window.addEventListener('pagehide', flushDeferredRecoveryWrites);
-  window.addEventListener('beforeunload', flushDeferredRecoveryWrites);
-  document.addEventListener('visibilitychange', ()=>{if(document.visibilityState==='hidden') flushDeferredRecoveryWrites();});
+  window.addEventListener('pagehide', ()=>{try{commitPendingRangeDrafts('pagehide',{save:false}); save(true); flushPendingSaveNow('exit');}catch(e){} flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();});
+  window.addEventListener('beforeunload', ()=>{try{commitPendingRangeDrafts('beforeunload',{save:false}); save(true); flushPendingSaveNow('exit');}catch(e){} flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();});
+  document.addEventListener('visibilitychange', ()=>{if(document.visibilityState==='hidden'){try{commitPendingRangeDrafts('hidden',{save:false}); save(true); flushPendingSaveNow('exit');}catch(e){} flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}});
 }catch(e){}
 
 function mergeValues(target, source){
@@ -1175,22 +1210,102 @@ function latestSharedSavedRaw(){
 function parseStateRaw(raw){
   try{return raw?migrate(restoreDayCachesIntoState(JSON.parse(raw))):null;}catch(e){return null;}
 }
+
+function mergeLoggedFlagsPreserveTrue(a={},b={}){
+  const out=Object.assign({},a||{},b||{});
+  try{new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(k=>{if(a?.[k]===true || b?.[k]===true) out[k]=true;});}catch(e){}
+  return out;
+}
+function newerIso(a,b){return stampFromIso(a)>=stampFromIso(b)?a:b;}
+function mergeRangePeriodsPreserveNewest(a={},b={}){
+  const out=deepClone(a||{});
+  try{
+    Object.entries(b||{}).forEach(([key,periods])=>{
+      out[key]=out[key]||{};
+      Object.entries(periods||{}).forEach(([period,row])=>{
+        const existing=out[key]?.[period];
+        if(!existing || stampFromIso(row?.loggedAt)>=stampFromIso(existing?.loggedAt)) out[key][period]=deepClone(row);
+      });
+    });
+  }catch(e){}
+  return out;
+}
+function mergeArrayRecordsPreserveUnique(a=[],b=[]){
+  const out=[]; const seen=new Set();
+  const add=x=>{try{const id=x?.id||x?.at||x?.loggedAt||x?.completedAt||JSON.stringify(x); if(seen.has(id)) return; seen.add(id); out.push(deepClone(x));}catch(e){out.push(deepClone(x));}};
+  (Array.isArray(a)?a:[]).forEach(add); (Array.isArray(b)?b:[]).forEach(add);
+  try{out.sort((x,y)=>stampFromIso(x?.at||x?.loggedAt||x?.completedAt)-stampFromIso(y?.at||y?.loggedAt||y?.completedAt));}catch(e){}
+  return out;
+}
+function mergeBooleanObjectOr(a={},b={}){
+  const out=Object.assign({},a||{},b||{});
+  try{new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(k=>{if(typeof a?.[k]==='boolean'||typeof b?.[k]==='boolean') out[k]=!!(a?.[k]||b?.[k]); else if((out[k]===undefined||out[k]===''||out[k]===null) && b?.[k]) out[k]=deepClone(b[k]);});}catch(e){}
+  return out;
+}
+function mergeRecoveryPreserveAnchors(a={},b={}){
+  const out=Object.assign({},a||{},b||{});
+  try{
+    ['caffeineCutoff','phoneBoundary','wakeTimeSet','morningCue','tomorrowMinimum','bedroomReady','lightCloseout'].forEach(k=>{out[k]=!!(a?.[k]||b?.[k]); out[k+'At']=newerIso(a?.[k+'At'],b?.[k+'At'])||out[k+'At'];});
+    ['targetBedtime','targetWakeTime','morningCueText','tomorrowMinimumText','notes'].forEach(k=>{if(!String(out[k]||'').trim()) out[k]=a?.[k]||b?.[k]||'';});
+    if(stampFromIso(a?.nextAnchorSkippedAt)>stampFromIso(b?.nextAnchorSkippedAt)){out.nextAnchorSkippedKey=a.nextAnchorSkippedKey; out.nextAnchorSkippedDate=a.nextAnchorSkippedDate; out.nextAnchorSkippedAt=a.nextAnchorSkippedAt;}
+  }catch(e){}
+  return out;
+}
+function syncTopLevelFromLatestRangePeriods(d){
+  try{
+    const set=(key,fn)=>{
+      const rows=Object.values(d._rangePeriods?.[key]||{}).filter(r=>numberOrNull(r?.value)!==null);
+      if(!rows.length) return;
+      rows.sort((a,b)=>stampFromIso(b.loggedAt)-stampFromIso(a.loggedAt));
+      fn(numberOrNull(rows[0].value));
+    };
+    d.therapy=d.therapy||{}; d.pattern=d.pattern||defaultPattern();
+    set('energy',v=>{d.energy=v}); set('mood',v=>{d.mood=v});
+    set('therapyStress',v=>{d.therapy.stress=v}); set('therapyLoneliness',v=>{d.therapy.loneliness=v});
+    set('therapyConfidence',v=>{d.therapy.confidence=v}); set('therapyOverwhelm',v=>{d.therapy.overwhelm=v});
+    set('pattern.irritability',v=>{d.pattern.irritability=v; d.pattern.currentEffectsLogged=true});
+    set('pattern.focusLevel',v=>{d.pattern.focusLevel=v; d.pattern.currentEffectsLogged=true});
+    set('pattern.driveLevel',v=>{d.pattern.driveLevel=v; d.pattern.currentEffectsLogged=true});
+  }catch(e){}
+  return d;
+}
+function mergeDayRecordsPreserveInputs(localDay,savedDay){
+  if(!localDay) return migrateDay(deepClone(savedDay||defaultDay()));
+  if(!savedDay) return migrateDay(deepClone(localDay||defaultDay()));
+  const a=migrateDay(deepClone(localDay));
+  const b=migrateDay(deepClone(savedDay));
+  const base=meaningfulDayStamp(b)>=meaningfulDayStamp(a)?deepClone(b):deepClone(a);
+  const other=meaningfulDayStamp(b)>=meaningfulDayStamp(a)?a:b;
+  try{
+    base._logged=mergeLoggedFlagsPreserveTrue(other._logged,base._logged);
+    base._rangePeriods=mergeRangePeriodsPreserveNewest(other._rangePeriods,base._rangePeriods);
+    ['moodTimeline','energyTimeline','forecastActions','forecastDismissals','azureSessions','privateEvents'].forEach(k=>{base[k]=mergeArrayRecordsPreserveUnique(other[k],base[k]);});
+    base.dayFood=base.dayFood||defaultDayFood(); other.dayFood=other.dayFood||defaultDayFood();
+    ['morning','afternoon','evening'].forEach(p=>{base.dayFood[p]=mergeBooleanObjectOr(other.dayFood?.[p]||{},base.dayFood?.[p]||{});});
+    base.morningStart=mergeBooleanObjectOr(other.morningStart||{},base.morningStart||{});
+    base.recovery=mergeRecoveryPreserveAnchors(other.recovery||{},base.recovery||{});
+    ['water','workout','azure','money','fatherCheck','home','socialCheck','night'].forEach(k=>{base[k]=!!(base[k]||other[k]);});
+    if(base.health&&other.health) base.health=mergeBooleanObjectOr(other.health,base.health);
+    if(base.father&&other.father){base.father.daily=mergeBooleanObjectOr(other.father.daily||{},base.father.daily||{}); base.father.coaching=mergeBooleanObjectOr(other.father.coaching||{},base.father.coaching||{});}
+    if(base.social&&other.social) base.social=mergeBooleanObjectOr(other.social,base.social);
+    if(base.moneyDiscipline&&other.moneyDiscipline) base.moneyDiscipline=mergeBooleanObjectOr(other.moneyDiscipline,base.moneyDiscipline);
+    if(!String(base.notes||'').trim() && String(other.notes||'').trim()) base.notes=other.notes;
+    base.review=Object.assign({},other.review||{},base.review||{});
+    base.inputUpdatedAt=newerIso(base.inputUpdatedAt,other.inputUpdatedAt)||base.inputUpdatedAt||other.inputUpdatedAt;
+    base.lastUpdated=newerIso(base.lastUpdated,other.lastUpdated)||base.lastUpdated||other.lastUpdated;
+    base._savedAt=newerIso(base._savedAt,other._savedAt)||base._savedAt||other._savedAt;
+    syncTopLevelFromLatestRangePeriods(base);
+  }catch(e){}
+  return migrateDay(base);
+}
 function mergeStatesNewestWins(localState, savedState){
   localState=migrate(localState||{});
   savedState=migrate(savedState||{});
   const merged=deepClone(localState);
   merged.days=merged.days||{};
-  Object.entries(savedState.days||{}).forEach(([k,sd])=>{
-    const ld=merged.days[k];
-    if(!ld || meaningfulDayStamp(sd)>meaningfulDayStamp(ld)){
-      merged.days[k]=migrateDay(deepClone(sd));
-    }
-  });
-  Object.entries(localState.days||{}).forEach(([k,ld])=>{
-    const sd=savedState.days?.[k];
-    if(!sd || meaningfulDayStamp(ld)>=meaningfulDayStamp(sd)){
-      merged.days[k]=migrateDay(deepClone(ld));
-    }
+  const dayKeys=new Set([...Object.keys(localState.days||{}),...Object.keys(savedState.days||{})]);
+  dayKeys.forEach(k=>{
+    merged.days[k]=mergeDayRecordsPreserveInputs(localState.days?.[k], savedState.days?.[k]);
   });
   const savedNewer=meaningfulStateStamp(savedState)>meaningfulStateStamp(localState);
   if(savedNewer){
@@ -1276,43 +1391,58 @@ async function hydrateFromIndexedDB(){
     catch(e){}
   }
 }
+let secondaryStorageTimer=null;
+let secondaryStorageRaw=null;
+function scheduleSecondaryStorageWrites(raw,delay=900){
+  try{
+    secondaryStorageRaw=raw;
+    if(secondaryStorageTimer) clearTimeout(secondaryStorageTimer);
+    secondaryStorageTimer=setTimeout(()=>flushSecondaryStorageWrites(),delay);
+  }catch(e){}
+}
+function flushSecondaryStorageWrites(){
+  try{
+    if(secondaryStorageTimer){clearTimeout(secondaryStorageTimer); secondaryStorageTimer=null;}
+    const raw=secondaryStorageRaw;
+    secondaryStorageRaw=null;
+    if(!raw) return;
+    try{localStorage.setItem(STATE_BACKUP_KEY, raw);}catch(e){}
+    try{localStorage.setItem(STATE_LAST_GOOD_KEY, raw);}catch(e){}
+    try{sessionStorage.setItem(STATE_SESSION_KEY, raw);}catch(e){}
+    try{sessionStorage.setItem(STATE_BACKUP_KEY, raw);}catch(e){}
+    try{
+      const obj=JSON.parse(raw);
+      const k=todayKey();
+      const d=obj.days?.[k];
+      if(d){
+        d._savedAt=obj._savedAt||new Date().toISOString();
+        const dayRaw=JSON.stringify(d);
+        try{localStorage.setItem(DAY_CACHE_PREFIX+k, dayRaw);}catch(e){}
+        try{sessionStorage.setItem(DAY_CACHE_PREFIX+k, dayRaw);}catch(e){}
+      }
+    }catch(e){}
+    try{idbPutRaw(raw);}catch(e){}
+  }catch(e){}
+}
 function writeSavedRaw(raw){
   let compactRaw=raw;
   try{compactRaw=JSON.stringify(stateForStorage(JSON.parse(raw)));}catch(e){}
 
-  // Fast path: save the actual app data immediately so buttons/sliders feel responsive.
+  // Performance bug-fix: keep the durable primary save immediate, but defer duplicate backups/caches.
+  // Multiple localStorage/sessionStorage writes of the whole app state were blocking Android Chrome.
   try{localStorage.setItem(LS_KEY, compactRaw);}catch(e){}
-  try{localStorage.setItem(STATE_BACKUP_KEY, compactRaw);}catch(e){}
-  try{localStorage.setItem(STATE_LAST_GOOD_KEY, compactRaw);}catch(e){}
-  try{sessionStorage.setItem(STATE_SESSION_KEY, compactRaw);}catch(e){}
-  try{sessionStorage.setItem(STATE_BACKUP_KEY, compactRaw);}catch(e){}
 
   if(needsImmediateTabRecoveryWrite()){
-    // In Android local HTML/content:// mode, the deferred fallback may not fire before the app is closed.
-    // Write the tab/hash/session recovery immediately so today's inputs do not visually roll back.
+    // Local content:// / blocked storage still needs immediate tab recovery. Hosted HTTPS does not.
     try{writeImmediateTabRecovery(compactRaw);}catch(e){}
   }
 
-  raw=compactRaw;
-  try{
-    const obj=JSON.parse(raw);
-    const k=todayKey();
-    const d=obj.days?.[k];
-    if(d){
-      d._savedAt=obj._savedAt||new Date().toISOString();
-      const dayRaw=JSON.stringify(d);
-      localStorage.setItem(DAY_CACHE_PREFIX+k, dayRaw);
-      sessionStorage.setItem(DAY_CACHE_PREFIX+k, dayRaw);
-    }
-  }catch(e){}
-
-  idbPutRaw(raw);
+  scheduleSecondaryStorageWrites(compactRaw, isLocalAppMode()?200:900);
   lastSaveAt = new Date().toISOString();
   updateSaveStatus();
 
-  // Slow path: URL hash/window recovery is useful, but expensive on Android content://.
-  // Defer it briefly so the visual change happens first.
-  scheduleDeferredRecoveryWrites(compactRaw);
+  // Slow path: URL hash/window recovery is useful in local file mode, but expensive.
+  if(needsImmediateTabRecoveryWrite()) scheduleDeferredRecoveryWrites(compactRaw);
 }
 function clearSavedRaw(){
   try{localStorage.removeItem(LS_KEY); localStorage.removeItem(STATE_BACKUP_KEY); localStorage.removeItem(STATE_LAST_GOOD_KEY); localStorage.removeItem(STATE_CRITICAL_KEY); localStorage.removeItem(STATE_CRITICAL_KEY+'_last_good'); localStorage.removeItem(ADAYA_RECOVERY_KEY); localStorage.removeItem(ADAYA_RECOVERY_KEY+'_last_good'); localStorage.removeItem('tlcc_active');}catch(e){}
@@ -1438,6 +1568,7 @@ function migrateDay(d){
     Object.keys(df[period]).forEach(k=>{if(!(k in d.dayFood[period])) d.dayFood[period][k]=false;});
   });
   if(!('dailySnapshot' in d)) d.dailySnapshot=null;
+  repairCanonicalRangeLogsForDay(d);
   return d;
 }
 function snapshotGlobalState(){
@@ -1513,13 +1644,19 @@ function queueInputUpdatedFromEvent(ev){
 }
 function markInputUpdated(iso){
   const now=iso||new Date().toISOString();
+  try{invalidateDerivedCaches();}catch(e){}
   lastInputUpdatedAt=now;
   state._inputUpdatedAt=now;
   state._lastMeaningfulInputAt=now;
   try{
+    const t=new Date(now).getTime();
+    if(t && !Number.isNaN(t)){inputUpdatedStampCache=t; inputUpdatedStampCacheReady=true;}
+  }catch(e){}
+  try{
     const k=todayKey();
     if(state.days && state.days[k]) state.days[k].inputUpdatedAt=now;
   }catch(e){}
+  try{updateSaveStatus();}catch(e){}
 }
 function maybeMarkInputUpdated(ev){
   if(pendingInputUpdate){
@@ -1544,45 +1681,130 @@ let lastTodaySnapshotAt=0;
 function shouldCaptureTodaySnapshotNow(){
   try{
     const now=Date.now();
-    if(now-lastTodaySnapshotAt<5000) return false;
+    if(now-lastTodaySnapshotAt<60000) return false;
     lastTodaySnapshotAt=now;
     return true;
   }catch(e){return true;}
 }
 
-function latestInputUpdatedStamp(){
+function latestInputUpdatedStamp(force=false){
+  if(!force && inputUpdatedStampCacheReady) return inputUpdatedStampCache||0;
   const stamps=[];
   try{ if(lastInputUpdatedAt) stamps.push(new Date(lastInputUpdatedAt).getTime()); }catch(e){}
   try{ if(state?._inputUpdatedAt) stamps.push(new Date(state._inputUpdatedAt).getTime()); }catch(e){}
   try{ if(state?.days?.[todayKey()]?.inputUpdatedAt) stamps.push(new Date(state.days[todayKey()].inputUpdatedAt).getTime()); }catch(e){}
-  try{
-    Object.values(state.days||{}).forEach(d=>{
-      if(d?.inputUpdatedAt) stamps.push(new Date(d.inputUpdatedAt).getTime());
-    });
-  }catch(e){}
+  // Slow fallback only runs once after load/import. Normal taps update the cache in markInputUpdated().
+  if(force || !stamps.length){
+    try{
+      Object.values(state.days||{}).forEach(d=>{
+        if(d?.inputUpdatedAt) stamps.push(new Date(d.inputUpdatedAt).getTime());
+      });
+    }catch(e){}
+  }
   const good=stamps.filter(x=>x && !Number.isNaN(x));
-  return good.length ? Math.max(...good) : 0;
+  inputUpdatedStampCache=good.length ? Math.max(...good) : 0;
+  inputUpdatedStampCacheReady=true;
+  return inputUpdatedStampCache;
 }
 
-function save(skipSnapshot=false){
-  maybeMarkInputUpdated();
-  maybeMergeLatestSharedStateOnSave();
-  syncLinkedFieldsForDay();
+let saveFlushTimer=null;
+let saveDirty=false;
+let saveSnapshotPending=false;
+let saveLastAutoEffectAt=0;
+let saveLastSyncAt=0;
+let saveFlushBusy=false;
+function scheduleSaveFlush(delay=450){
+  try{
+    if(saveFlushTimer) clearTimeout(saveFlushTimer);
+    const run=()=>flushPendingSaveNow('scheduled');
+    if('requestIdleCallback' in window){
+      saveFlushTimer=setTimeout(()=>{saveFlushTimer=null; try{requestIdleCallback(run,{timeout:900});}catch(e){run();}}, delay);
+    }else{
+      saveFlushTimer=setTimeout(()=>{saveFlushTimer=null; run();}, delay);
+    }
+  }catch(e){
+    try{saveFlushTimer=setTimeout(()=>{saveFlushTimer=null; flushPendingSaveNow('scheduled');}, delay);}catch(err){}
+  }
+}
+function prepStateForSave(skipSnapshot=false){
+  try{maybeMarkInputUpdated();}catch(e){}
+  try{syncLinkedFieldsForDay();}catch(e){}
   state.settings=state.settings||{};
   state.settings.activeTab=active||'today';
   state.settings.guideState=guideState?deepClone(guideState):null;
-  if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) captureTodaySnapshot();
+  if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  markExpiredForecastActions();
-  state._schemaVersion='v279-guide-completion-persistence-bugfix';
-  autoCompleteDueForecastEffectsSilently();
-  if(state.days?.[todayKey()]){
-    state.days[todayKey()]._savedAt=now;
-    state.days[todayKey()].lastUpdated=now;
+  state._schemaVersion='v281-render-interaction-performance-bugfix';
+  try{markExpiredForecastActions();}catch(e){}
+  try{
+    const nowMs=Date.now();
+    if(nowMs-saveLastAutoEffectAt>60000){
+      saveLastAutoEffectAt=nowMs;
+      autoCompleteDueForecastEffectsSilently();
+    }
+  }catch(e){}
+  try{
+    if(state.days?.[todayKey()]){
+      state.days[todayKey()]._savedAt=now;
+      state.days[todayKey()].lastUpdated=now;
+    }
+  }catch(e){}
+}
+function save(skipSnapshot=false){
+  // Perf3: do not run linked-field sync, expired forecast cleanup, snapshots, or JSON.stringify in the tap path.
+  // Data-integrity fix: pending slider drafts must enter canonical state before any durable save/export.
+  try{if(!committingPendingRangeDrafts) commitPendingRangeDrafts('save',{save:false});}catch(e){}
+  try{maybeMarkInputUpdated();}catch(e){}
+  state.settings=state.settings||{};
+  state.settings.activeTab=active||'today';
+  state.settings.guideState=guideState?deepClone(guideState):null;
+  if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
+  const now=new Date().toISOString();
+  state._savedAt=now;
+  state._schemaVersion='v284-data-integrity-canonical-input-bugfix';
+  try{
+    const k=todayKey();
+    if(state.days?.[k]){
+      state.days[k]._savedAt=now;
+      state.days[k].lastUpdated=now;
+    }
+  }catch(e){}
+  saveDirty=true;
+  updateSaveStatus();
+  scheduleSaveFlush(520);
+}
+function flushPendingSaveNow(reason='manual'){
+  try{
+    if(saveFlushTimer){clearTimeout(saveFlushTimer); saveFlushTimer=null;}
+    if(saveFlushBusy) return false;
+    if(!saveDirty && reason!=='force' && reason!=='exit' && reason!=='export' && reason!=='import') return false;
+    saveFlushBusy=true;
+    try{
+      // Hosted single-origin mode should not merge every tap. It is expensive and can make Android feel frozen.
+      // Cross-tab/newer-state merge still runs on focus/storage/load.
+      const nowMs=Date.now();
+      if(reason==='focus' || (reason==='manual-merge' && nowMs-saveLastSyncAt>60000)){
+        saveLastSyncAt=nowMs;
+        try{maybeMergeLatestSharedStateOnSave();}catch(e){}
+      }
+      if(saveSnapshotPending){
+        saveSnapshotPending=false;
+        try{captureTodaySnapshot();}catch(e){}
+      }
+      prepStateForSave(true);
+      writeSavedRaw(JSON.stringify(state));
+      saveDirty=false;
+      scheduleAutoBackupDownload();
+      return true;
+    }finally{
+      saveFlushBusy=false;
+    }
+  }catch(e){
+    try{saveFlushBusy=false;}catch(_){}
+    try{writeSavedRaw(JSON.stringify(state)); saveDirty=false;}catch(err){}
+    return false;
   }
-  writeSavedRaw(JSON.stringify(state));
-  scheduleAutoBackupDownload();
 }
 function resetDailyNonSliderFields(d){
   if(!d) return d;
@@ -1755,9 +1977,15 @@ function updateSaveStatus(){
 function commitFocusedField(){
   try{
     const el=document.activeElement;
+    if(el && el.tagName==='INPUT' && String(el.type||'').toLowerCase()==='range'){
+      const f=el.closest('.rangeField');
+      if(f?.dataset?.todayRange==='1') todaySliderCommit(el,f.dataset.rangeKey);
+      else rangeInputTouched(el,f?.dataset?.rangeKey||sliderKeyFromLabel(f?.querySelector('.rangeLabelLine span')?.textContent||''));
+    }
     if(el && ['INPUT','TEXTAREA','SELECT'].includes(el.tagName)){
       el.dispatchEvent(new Event('change',{bubbles:true}));
     }
+    commitPendingRangeDrafts('focused-field',{save:false});
   }catch(e){}
 }
 let autosaveTimer=null;
@@ -1851,20 +2079,51 @@ function renderGuideStatusBadges(){
   }
 }
 
+function buildTabButtonsOnce(){
+  const t=document.getElementById('tabs'), b=document.getElementById('bottomNav');
+  if(!t||!b) return;
+  if(navTabsBuilt && t.children.length && b.children.length) return;
+  t.innerHTML=''; b.innerHTML='';
+  tabs.forEach(([id,label])=>{
+    [t,b].forEach(root=>{
+      const btn=document.createElement('button');
+      btn.className=(id===active?'tab active':'tab');
+      btn.dataset.tabId=id;
+      btn.textContent=label;
+      btn.onclick=()=>setActiveTab(id);
+      root.appendChild(btn);
+    });
+  });
+  navTabsBuilt=true;
+}
 function nav(){
   document.getElementById('todayPill').textContent = todayLabel(new Date());
   const gb=document.getElementById('timeGuideBtn'); if(gb){const gp=currentGuidePeriod(); gb.textContent=guideState?`${guidePeriodLabel(guideState.period)} Guide On`:`${gp.label} Guide`; gb.className='btn small guidePremium '+(guideState?'guideOn':'');}
   const mb=document.getElementById('missedMorningGuideBtn'); if(mb){const show=missedMorningGuideAvailable(); mb.style.display=show?'':'none'; mb.textContent='AM Catch-up'; mb.className='btn small '+(show?'':'hidden');}   const sb=document.getElementById('smartCheckBtn'); if(sb){const si=smartCheckInAvailable(); sb.style.display=si.visible===false?'none':''; sb.textContent=si.label; sb.title=si.reason; sb.disabled=!si.available; sb.setAttribute('aria-disabled',si.available?'false':'true'); sb.className='btn small '+(si.available?'checkInPremium':'disabled');}
   const qb=document.getElementById('quickModeBtn'); if(qb){qb.textContent=state.settings?.quickMode?'Quick Mode On':'Quick Mode'; qb.title=state.settings?.quickMode?'Quick Mode is on':'Quick Mode'; qb.className='btn small quickCompact '+(state.settings?.quickMode?'quickOn':'');}
   renderGuideStatusBadges();
-  const t=document.getElementById('tabs'), b=document.getElementById('bottomNav'); t.innerHTML=''; b.innerHTML='';
-  tabs.forEach(([id,label])=>{[t,b].forEach(root=>{let btn=document.createElement('button');btn.className=(id===active?'tab active':'tab');btn.textContent=label;btn.onclick=()=>setActiveTab(id);root.appendChild(btn)})});
+  buildTabButtonsOnce();
+  updateActiveTabClasses();
+}
+function updateActiveTabClasses(){
+  try{
+    document.querySelectorAll('#tabs button[data-tab-id],#bottomNav button[data-tab-id]').forEach(btn=>{
+      const on=btn.dataset.tabId===active;
+      btn.className=on?'tab active':'tab';
+    });
+  }catch(e){}
 }
 function setActiveTab(id){
+  if(!tabs.some(([tabId])=>tabId===id)) return;
+  try{commitFocusedField(); commitPendingRangeDrafts('tab-switch',{save:false});}catch(e){}
+  if(active===id){updateActiveTabClasses(); return;}
   active=id;
   state.settings=state.settings||{};
   state.settings.activeTab=id;
   safeLocalSet('tlcc_active',id);
+  updateActiveTabClasses();
+  // Persist the selected tab later; do not block the tap or the active-class paint.
+  try{save(true);}catch(e){}
   render();
 }
 function clearLinkedMasterSources(d,k){
@@ -2177,8 +2436,8 @@ function rangeDisplayInfo(key,value){
   }
   return {value:display, hint};
 }
-function applyRangeValueToState(key,value){
-  const d=day(); const k=String(key||'');
+function applyRangeValueToState(key,value,dOverride=null){
+  const d=dOverride||day(); const k=String(key||'');
   const n=Number(value);
   if(!Number.isFinite(n)) return;
   d._logged=d._logged||{};
@@ -2198,18 +2457,82 @@ function applyRangeValueToState(key,value){
     if(field) d.pattern[field]=n;
   }
 }
+function canonicalSliderStateValue(d,key){
+  try{
+    const k=String(key||'');
+    if(k==='energy') return numberOrNull(d?.energy);
+    if(k==='mood') return numberOrNull(d?.mood);
+    if(k==='therapyStress') return numberOrNull(d?.therapy?.stress);
+    if(k==='therapyLoneliness') return numberOrNull(d?.therapy?.loneliness);
+    if(k==='therapyConfidence') return numberOrNull(d?.therapy?.confidence);
+    if(k==='therapyOverwhelm') return numberOrNull(d?.therapy?.overwhelm);
+    if(k.startsWith('pattern.')) return numberOrNull(d?.pattern?.[k.slice('pattern.'.length)]);
+  }catch(e){}
+  return null;
+}
+function commitRangeValueCanonical(key,value,opts={}){
+  // Data-integrity fix: all sliders commit through this one path.
+  // Canonical source is top-level/domain field + d._rangePeriods[key][period] for time-block sliders.
+  try{
+    const k=String(key||'');
+    const n=Number(value);
+    if(!k || !Number.isFinite(n)) return false;
+    const d=opts.day || day();
+    const now=opts.loggedAt || new Date().toISOString();
+    applyRangeValueToState(k,n,d);
+    d._logged=d._logged||{};
+    d._logged[k]=true;
+    d._logged['slider:'+k]=true;
+    if(isTimeAwareRangeKey(k)){
+      const p=opts.periodKey || rangePeriodKey();
+      d._rangePeriods=d._rangePeriods||{};
+      d._rangePeriods[k]=d._rangePeriods[k]||{};
+      d._rangePeriods[k][p]={value:n, loggedAt:now};
+      d._logged['slider:'+k+':'+p]=true;
+      if(opts.autoEffect!==false) maybeAutoCompleteForecastEffectFromRange(k,p);
+    }
+    d.inputUpdatedAt=now;
+    d.lastUpdated=now;
+    d._savedAt=now;
+    markInputUpdated(now);
+    if(opts.save!==false) save(true);
+    if(opts.render===true) render();
+    return true;
+  }catch(e){return false;}
+}
+function repairCanonicalRangeLogsForDay(d){
+  // Repairs older/corrupted records where _logged said a period slider was logged
+  // but the canonical _rangePeriods row was missing or had no value.
+  try{
+    if(!d) return d;
+    d._logged=d._logged||{};
+    d._rangePeriods=d._rangePeriods||{};
+    Array.from(TIME_AWARE_RANGE_KEYS||[]).forEach(k=>{
+      d._rangePeriods[k]=d._rangePeriods[k]||{};
+      ['morning','afternoon','evening'].forEach(p=>{
+        const row=d._rangePeriods[k][p];
+        const logged=!!d._logged['slider:'+k+':'+p];
+        const rowVal=numberOrNull(row?.value);
+        if(row && rowVal!==null){
+          d._logged[k]=true; d._logged['slider:'+k]=true; d._logged['slider:'+k+':'+p]=true;
+          if(!row.loggedAt) row.loggedAt=d.inputUpdatedAt||d.lastUpdated||d._savedAt||new Date().toISOString();
+          return;
+        }
+        if(logged){
+          const fallback=canonicalSliderStateValue(d,k);
+          if(fallback!==null){
+            d._rangePeriods[k][p]={value:fallback, loggedAt:d.inputUpdatedAt||d.lastUpdated||d._savedAt||new Date().toISOString()};
+          }
+        }
+      });
+      if(!Object.keys(d._rangePeriods[k]||{}).length) delete d._rangePeriods[k];
+    });
+  }catch(e){}
+  return d;
+}
 function markRangeLogged(key,value){
-  const d=day(); const k=String(key||'');
-  applyRangeValueToState(k,value);
-  d._logged=d._logged||{}; d._logged[k]=true; d._logged['slider:'+k]=true;
-  if(isTimeAwareRangeKey(k)){
-    const p=rangePeriodKey();
-    d._rangePeriods=d._rangePeriods||{}; d._rangePeriods[k]=d._rangePeriods[k]||{};
-    d._rangePeriods[k][p]={value:value!==undefined?Number(value):undefined, loggedAt:new Date().toISOString()};
-    d._logged['slider:'+k+':'+p]=true;
-    maybeAutoCompleteForecastEffectFromRange(k,p);
-  }
-  try{save(true)}catch(e){try{writeSavedRaw(JSON.stringify(state))}catch(err){}}
+  try{commitRangeValueCanonical(key,value,{save:true,render:false});}
+  catch(e){try{writeSavedRaw(JSON.stringify(state))}catch(err){}}
 }
 function undoRangeLogged(key){
   const d=day(); const k=String(key||'');
@@ -2261,8 +2584,13 @@ function rangeQuickPick(btn,key,value){
       input.value=String(value);
       const val=field.querySelector('.rangeVal');
       if(val) val.textContent=String(value);
-      rangeInputTouched(input,key);
-      input.dispatchEvent(new Event('change',{bubbles:true}));
+      if(field?.dataset?.todayRange==='1'){
+        todaySliderLive(input);
+        todaySliderCommit(input,key);
+      }else{
+        rangeInputTouched(input,key);
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+      }
     }else{
       markRangeLogged(key,value);
       save();
@@ -2270,7 +2598,8 @@ function rangeQuickPick(btn,key,value){
     }
   }catch(e){console.warn('range quick pick failed',e);}
 }
-function rangeInputTouched(el,key){
+
+function rangeDraftTouched(el,key){
   try{
     const f=el.closest('.rangeField');
     const info=rangeLogInfo(key);
@@ -2284,25 +2613,120 @@ function rangeInputTouched(el,key){
     }
     const undo=f?.querySelector('.rangeUndo');
     if(undo) undo.classList.remove('hidden');
-
-    // Live slider movement should feel instant. Update state now, but do not run a full save/render
-    // on every tiny movement. The onchange callback commits the final value.
-    const k=String(key||'');
-    const value=el?.value;
-    applyRangeValueToState(k,value);
-    const d=day();
-    d._logged=d._logged||{};
-    d._logged[k]=true;
-    d._logged['slider:'+k]=true;
-    if(isTimeAwareRangeKey(k)){
-      const p=rangePeriodKey();
-      d._rangePeriods=d._rangePeriods||{};
-      d._rangePeriods[k]=d._rangePeriods[k]||{};
-      d._rangePeriods[k][p]={value:value!==undefined?Number(value):undefined, loggedAt:new Date().toISOString()};
-      d._logged['slider:'+k+':'+p]=true;
-    }
-    markInputUpdated();
   }catch(e){}
+}
+function rangeInputTouched(el,key){
+  try{
+    const f=el.closest('.rangeField');
+    const period=f?.dataset?.rangePeriod || rangePeriodKey();
+    f?.classList.remove('rangeUnlogged');
+    f?.classList.add('rangeLogged');
+    const badge=f?.querySelector('.rangeBadge');
+    if(badge){
+      badge.textContent=isTimeAwareRangeKey(key)?`Logged ${period==='morning'?'morning':period==='afternoon'?'afternoon':period==='evening'?'evening':'today'}`:'Logged today';
+      badge.classList.remove('todo');
+      badge.classList.add('done');
+    }
+    const undo=f?.querySelector('.rangeUndo');
+    if(undo) undo.classList.remove('hidden');
+    commitRangeValueCanonical(key,el?.value,{periodKey:period,save:false,render:false});
+  }catch(e){}
+}
+
+let todaySliderLastCommit={key:'',value:'',period:'',at:0};
+let pendingRangeDrafts={};
+let committingPendingRangeDrafts=false;
+function pendingRangeDraftId(key,period){return String(key||'')+'::'+String(period||'day');}
+function queuePendingRangeDraft(el,key){
+  try{
+    const f=el?.closest?.('.rangeField');
+    const k=String(key||f?.dataset?.rangeKey||'');
+    const p=String(f?.dataset?.rangePeriod||rangePeriodKey()||'day');
+    if(!k) return;
+    const raw=String(el?.value ?? '');
+    pendingRangeDrafts[pendingRangeDraftId(k,p)]={key:k,period:p,value:raw,at:Date.now()};
+    if(f){
+      f.dataset.pendingRangeDraft='1';
+      f.dataset.pendingRangeValue=raw;
+      f.dataset.rangePeriod=p;
+    }
+  }catch(e){}
+}
+function clearPendingRangeDraft(key,period){
+  try{delete pendingRangeDrafts[pendingRangeDraftId(key,period)];}catch(e){}
+}
+function commitPendingRangeDrafts(reason='manual',opts={}){
+  if(committingPendingRangeDrafts) return false;
+  committingPendingRangeDrafts=true;
+  let changed=false;
+  try{
+    try{
+      document.querySelectorAll('.rangeField[data-pending-range-draft="1"] input[type="range"]').forEach(el=>{
+        const f=el.closest('.rangeField');
+        const k=f?.dataset?.rangeKey; const p=f?.dataset?.rangePeriod||rangePeriodKey();
+        if(k) pendingRangeDrafts[pendingRangeDraftId(k,p)]={key:k,period:p,value:String(el.value??f?.dataset?.pendingRangeValue??''),at:Date.now()};
+      });
+    }catch(e){}
+    Object.values(pendingRangeDrafts||{}).forEach(draft=>{
+      if(!draft || !draft.key) return;
+      if(commitRangeValueCanonical(draft.key,draft.value,{periodKey:draft.period,save:false,render:false})){changed=true;}
+    });
+    pendingRangeDrafts={};
+    try{document.querySelectorAll('.rangeField[data-pending-range-draft="1"]').forEach(f=>{delete f.dataset.pendingRangeDraft; delete f.dataset.pendingRangeValue;});}catch(e){}
+    if(changed && opts.save!==false) save(true);
+  }catch(e){}
+  committingPendingRangeDrafts=false;
+  return changed;
+}
+function todaySliderLive(el){
+  // Perf4 kept drag fast; data-integrity fix records a lightweight pending draft for forced export/pagehide commits.
+  try{
+    const f=el?.closest?.('.rangeField');
+    if(!f) return true;
+    const val=f.querySelector('.rangeVal');
+    if(val) val.textContent=String(el.value ?? '');
+    f.classList.remove('rangeUnlogged');
+    f.classList.add('rangeLogged');
+    const badge=f.querySelector('.rangeBadge');
+    if(badge){
+      badge.textContent=f.dataset.draftLabel || 'Logged today';
+      badge.classList.remove('todo');
+      badge.classList.add('done');
+    }
+    const hint=f.querySelector('.rangeHint');
+    if(hint) hint.style.display='none';
+    queuePendingRangeDraft(el,f.dataset.rangeKey);
+  }catch(e){}
+  return true;
+}
+function todaySliderCommit(el,key){
+  try{
+    todaySliderLive(el);
+    const f=el?.closest?.('.rangeField');
+    const k=String(key||f?.dataset?.rangeKey||'');
+    const raw=el?.value;
+    const p=String(f?.dataset?.rangePeriod||rangePeriodKey()||'day');
+    const now=Date.now();
+    if(todaySliderLastCommit.key===k && todaySliderLastCommit.value===String(raw) && todaySliderLastCommit.period===p && now-todaySliderLastCommit.at<250) return false;
+    todaySliderLastCommit={key:k,value:String(raw),period:p,at:now};
+    commitRangeValueCanonical(k,raw,{periodKey:p,save:true,render:false});
+    clearPendingRangeDraft(k,p);
+    if(f){delete f.dataset.pendingRangeDraft; delete f.dataset.pendingRangeValue;}
+    render();
+  }catch(e){
+    try{commitPendingRangeDrafts('today-slider-error',{save:false}); save(true); render();}catch(err){}
+  }
+  return true;
+}
+function todayRangeInput(label,key,value,attrs=''){
+  const info=rangeLogInfo(key);
+  const logged=info.logged;
+  const display=rangeDisplayInfo(key,value);
+  const shown=display.value??'';
+  const keyJs=JSON.stringify(String(key||''));
+  const draftLabel=isTimeAwareRangeKey(key)?`Logged ${rangePeriodLabel()}`:'Logged today';
+  const period=rangePeriodKey();
+  return `<div class="rangeField ${logged?'rangeLogged':'rangeUnlogged'}" data-today-range="1" data-range-key="${esc(key)}" data-range-period="${esc(period)}" data-draft-label="${esc(draftLabel)}"><div class="rangeHead"><span class="rangeLabelLine"><span>${esc(label)}</span><span class="rangeBadge ${logged?'done':'todo'}">${esc(info.label)}</span></span><b class="rangeVal">${shown}</b></div><input type="range" value="${shown}" ${attrs} onpointerdown='todaySliderLive(this)' oninput='todaySliderLive(this)' onchange='todaySliderCommit(this, ${keyJs})' onpointerup='todaySliderCommit(this, ${keyJs})' ontouchend='todaySliderCommit(this, ${keyJs})'>${rangeGuideChips(key)}${display.hint?`<div class="rangeHint">${esc(display.hint)}</div>`:''}</div>`;
 }
 function input(type,label,value,onchange,attrs='',logKey='') {
   if(type==='range'){
@@ -2312,7 +2736,7 @@ function input(type,label,value,onchange,attrs='',logKey='') {
     const display=rangeDisplayInfo(key,value);
     const shown=display.value??'';
     const keyJs=JSON.stringify(key);
-    return `<div class="rangeField ${logged?'rangeLogged':'rangeUnlogged'}" data-range-key="${esc(key)}"><div class="rangeHead"><span class="rangeLabelLine"><span>${esc(label)}</span><span class="rangeBadge ${logged?'done':'todo'}">${esc(info.label)}</span></span><b class="rangeVal">${shown}</b></div><input type="range" value="${shown}" ${attrs} onpointerdown='rangeInputTouched(this, ${keyJs})' oninput='this.parentElement.querySelector(".rangeVal").textContent=this.value;rangeInputTouched(this, ${keyJs})' onchange='rangeInputTouched(this, ${keyJs});(${onchange})(this.value)'>${rangeGuideChips(key)}${display.hint?`<div class="rangeHint">${esc(display.hint)}</div>`:''}</div>`
+    return `<div class="rangeField ${logged?'rangeLogged':'rangeUnlogged'}" data-range-key="${esc(key)}" data-range-period="${esc(rangePeriodKey())}"><div class="rangeHead"><span class="rangeLabelLine"><span>${esc(label)}</span><span class="rangeBadge ${logged?'done':'todo'}">${esc(info.label)}</span></span><b class="rangeVal">${shown}</b></div><input type="range" value="${shown}" ${attrs} onpointerdown='rangeDraftTouched(this, ${keyJs})' oninput='this.parentElement.querySelector(".rangeVal").textContent=this.value;rangeDraftTouched(this, ${keyJs})' onchange='rangeInputTouched(this, ${keyJs});(${onchange})(this.value)'>${rangeGuideChips(key)}${display.hint?`<div class="rangeHint">${esc(display.hint)}</div>`:''}</div>`
   }
   if(type==='time'){
     const id=registerInputCallback(onchange);
@@ -2340,10 +2764,22 @@ function checkbox(label,checked,onchange){
 function progress(label,val,max,cls=''){return `<div class="meterLine"><div><div class="row"><span class="tiny">${label} <span class="goalAmt">${fmt(max)}</span></span><b>${pct(val,max)}%</b></div><div class="bar ${cls}"><i style="width:${pct(val,max)}%"></i></div></div><span class="tiny">${fmt(val)}</span></div>`}
 function propertyProgress(){const m=state.money; return `<div class="meterLine"><div><div class="row"><span class="tiny">Property fund <span class="goalAmt">${fmt(m.propertyGoal)}</span></span><b>${pct(m.propertyFund,m.propertyGoal)}%</b></div><div class="bar warn"><i style="width:${pct(m.propertyFund,m.propertyGoal)}%"></i></div></div><span class="tiny">${fmt(m.propertyFund)}</span></div>`}
 function sectionWrap(id,html){return `<section class="section ${active===id?'active':''}" id="sec-${id}">${html}</section>`}
-function render(){
+let renderQueued=false;
+function render(force=false){
   try{
-    if(!state||typeof state!=='object') state=loadState();
-    state=migrate(state);
+    if(force===true) return renderNow();
+    if(renderQueued) return;
+    renderQueued=true;
+    const run=()=>{renderQueued=false; renderNow();};
+    // Let Android paint the checkbox/slider/tab/button feedback first, then do heavier DOM work.
+    if(typeof requestAnimationFrame==='function') requestAnimationFrame(()=>setTimeout(run,0));
+    else setTimeout(run,0);
+  }catch(e){try{renderNow();}catch(err){}}
+}
+function renderNow(){
+  try{
+    window.__tlccRenderCache={};
+    ensureLightStateForRender();
     if(!tabs.some(([id])=>id===active)) active='today';
     syncLinkedFieldsForDay();
     // Do not force the active tab during render. The guide can stay on, but manual tab taps must work.
@@ -2365,6 +2801,7 @@ function render(){
     }
     const app=document.getElementById('app'); if(app) app.setAttribute('data-theme',state.theme||'dark');
     setTimeout(()=>{try{syncGuideUI(); updateSaveStatus();}catch(e){}},40);
+    setTimeout(()=>{try{window.__tlccRenderCache=null;}catch(e){}},0);
   }catch(err){
     console.error('TLCC render failed',err);
     try{active='today'; const c=document.getElementById('content'); if(c)c.innerHTML='<section class=\"section active\"><div class=\"card\"><h2>App recovered from a loading issue</h2><p class=\"tiny\">Use Data → Import JSON if anything looks missing.</p><div class=\"chips\" style=\"margin-top:10px\"><button class=\"btn small danger\" onclick=\"stopGuide();active=\\\'today\\\';state.settings.activeTab=\\\'today\\\';save(true);render();\">Stop Guide + Reload Today</button></div></div></section>'; nav(); updateSaveStatus();}catch(e){}
@@ -2951,7 +3388,7 @@ function persistGuideState(){
   state.settings=state.settings||{};
   state.settings.guideState=guideState?deepClone(guideState):null;
   state.settings.activeTab=active||'today';
-  try{writeSavedRaw(JSON.stringify(state));}catch(e){}
+  try{save(true);}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
 }
 function resetGuideOnTimeframeChange(){
   state.settings=state.settings||{};
@@ -3045,7 +3482,7 @@ function completeGuide(){
   try{markInputUpdated(completedAt);}catch(e){}
   // Save once more after clearing guideState so the durable state has the completed badge
   // and does not rely on an in-progress guide snapshot.
-  try{save(true);}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
+  try{save(true); flushPendingSaveNow('guide-complete');}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
   persistGuideState();
   const box=document.getElementById('guideControls');
   if(box){
@@ -3096,6 +3533,7 @@ function weekdayPatternConfidence(count){
   return {tier:'stronger',label:'Stronger signal',forecastWeight:.55,usable:true,rule:'8+ matching weekdays: stronger forecast influence'};
 }
 function weekdayPatternLayer(daysBack='all'){
+  return renderCacheGet('weekdayPatternLayer|'+String(daysBack)+'|'+todayKey(),()=>{
   const entries=recentEntries(daysBack).filter(e=>e.data).map(e=>({date:e.date,data:migrateDay(e.data)}));
   const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const boolRate=(rows,fn)=>rows.length?Math.round(rows.filter(fn).length/rows.length*100):0;
@@ -3149,6 +3587,7 @@ function weekdayPatternLayer(daysBack='all'){
     sundayReset:{...groupStats(sundays,'Sunday'),mondayPairs:sundayMondayPairs.length,afterSundayReset:{count:sundayResetPairs.length,mondayEnergy:avg(sundayResetPairs,x=>x.mondayEnergy),mondayMood:avg(sundayResetPairs,x=>x.mondayMood),mondayLifeScore:avg(sundayResetPairs,x=>x.mondayLifeScore)},afterSundayNoReset:{count:sundayNoResetPairs.length,mondayEnergy:avg(sundayNoResetPairs,x=>x.mondayEnergy),mondayMood:avg(sundayNoResetPairs,x=>x.mondayMood),mondayLifeScore:avg(sundayNoResetPairs,x=>x.mondayLifeScore)}},
     recentByWeekday:entries.slice(-14).map(e=>({date:e.date,weekday:weekdayForDateKey(e.date),energy:+e.data.energy||null,mood:+e.data.mood||null,sleep:+e.data.sleep||null,lifeScore:scoreDay(e.data).pct,water:!!e.data.water,azure:!!e.data.azure,money:!!e.data.money,nightReset:!!e.data.night}))
   };
+  });
 }
 function weekdayPatternForForecast(dateKey=todayKey()){
   const layer=weekdayPatternLayer('all');
@@ -3202,7 +3641,14 @@ function morningStartScope(){
 function setMorningStartField(key,val){
   const d=day(); const ms=morningStartScope();
   ms[key]=val;
+  if(key==='phoneBoundary'){
+    const r=ensureRecoveryFields(d);
+    r.phoneBoundary=!!val;
+    r.phoneBoundaryAt=new Date().toISOString();
+    d._logged=d._logged||{}; d._logged['recovery.phoneBoundary']=true;
+  }
   d._logged=d._logged||{}; d._logged['morningStart.'+key]=true;
+  markInputUpdated();
   save(); render();
 }
 function morningStartTouched(){
@@ -3293,7 +3739,8 @@ function setNextRecoveryAnchorDone(key){
   const saveKey=key==='sleepWake'?'wakeTimeSet':key;
   r[saveKey]=true;
   r[saveKey+'At']=new Date().toISOString();
-  if(saveKey==='phoneBoundary') r.nextAnchorSkippedKey='';
+  if(saveKey==='phoneBoundary'){ r.nextAnchorSkippedKey=''; d.morningStart=d.morningStart||defaultMorningStart(); d.morningStart.phoneBoundary=true; d._logged=d._logged||{}; d._logged['morningStart.phoneBoundary']=true; }
+  if(saveKey==='morningCue' && !String(r.morningCueText||'').trim()) r.morningCueText='Set morning cue';
   d._logged=d._logged||{};
   d._logged['recovery.'+saveKey]=true;
   syncRecoveryNightReset(d);
@@ -3411,6 +3858,8 @@ function setRecoveryFlag(key,val){
   const d=day(), r=ensureRecoveryFields(d);
   r[key]=!!val;
   r[key+'At']=new Date().toISOString();
+  if(key==='phoneBoundary'){d.morningStart=d.morningStart||defaultMorningStart(); d.morningStart.phoneBoundary=!!val; d._logged=d._logged||{}; d._logged['morningStart.phoneBoundary']=true;}
+  if(key==='morningCue' && val && !String(r.morningCueText||'').trim()) r.morningCueText='Set morning cue';
   d._logged=d._logged||{};
   d._logged['recovery.'+key]=true;
   syncRecoveryNightReset(d);
@@ -3619,6 +4068,7 @@ function peakForecastDisplayMaturity(entries=recentEntries(7)){
 
 
 function buildTodayCommand(){
+  return renderCacheGet('todayCommand|'+todayKey()+'|'+currentGuidePeriod().key,()=>{
   const d=day();
   const f=peakForecast(d);
   const displayMove=forecastDisplayMove(f);
@@ -3644,6 +4094,7 @@ function buildTodayCommand(){
     display,
     displayMove
   };
+  });
 }
 
 function renderTodayCommandCard(){
@@ -3666,7 +4117,6 @@ function renderTodayCommandCard(){
     </div>
     <div class="commandDoNow"><b>Do Now</b>${esc(c.doNow)}</div>
     ${forecastMoveControls(f,displayMove)}
-    ${renderWave3ProofPrompt()}
     <details class="forecastDetails" style="margin-top:10px">
       <summary class="tiny">Why this command?</summary>
       <div class="commandMeta"><span class="chip">Effect: ${esc(c.expectedEffect)}</span><span class="chip warn">Confidence: ${esc(c.confidence)}</span></div>
@@ -3675,23 +4125,36 @@ function renderTodayCommandCard(){
   </div>`;
 }
 
+function hydrateForecastDetails(el){
+  try{
+    if(!el || !el.open) return;
+    const box=el.querySelector('[data-forecast-lazy]');
+    if(!box || box.dataset.rendered==='1') return;
+    const f=peakForecast(day());
+    const displayMove=forecastDisplayMove(f);
+    box.innerHTML=`
+      ${peakForecastLevel5Html(f,displayMove)}
+      <div class="quote" style="margin-top:10px"><b>Peak Aim:</b> ${esc(growthSafeText(f.peakAim||'Make the next block better.'))}</div>
+      <div class="chips" style="margin-top:8px"><span class="chip">${esc(f.moveDomain||'Body / Energy')}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(f.moveMode||'Lift')} purpose</span></div>
+      <div style="margin-top:10px"><h3>Why this forecast looks this way</h3><div class="reasonGroups">${forecastReasonGroupsHtml(f.reasons,f)}</div></div>`;
+    box.dataset.rendered='1';
+  }catch(e){
+    try{const box=el.querySelector('[data-forecast-lazy]'); if(box) box.innerHTML='<div class="tiny">Forecast details could not load.</div>'; }catch(_e){}
+  }
+}
 function renderPeakForecastCards(){
   const d=day();
   const f=peakForecast(d);
-  const displayMove=forecastDisplayMove(f);
   const color=f.level==='Green'?'good':f.level==='Yellow'?'warn':'bad';
   const readHint=f.readMode+' score';
   const whyHeading='Forecast Details';
   return `<div class="card span7 commandDetailsCard" id="guide-today-forecast-why"><h2>${whyHeading} <span class="chip ${peakModeClass(f.moveMode)}">${esc(peakLevel5Mode(f))}</span></h2>
-    <details class="forecastDetails">
+    <details class="forecastDetails" ontoggle="hydrateForecastDetails(this)">
       <summary class="tiny">Open forecast score, reasons, and deeper read</summary>
       <div class="kpi" style="margin-top:10px"><div><span class="chip ${color}">Risk level: ${f.level}</span><div class="muted forecastLine" style="margin-top:8px"><span>${readHint}</span></div><div id="forecastInfoBox" class="forecastInfoBox hidden">${esc(f.readDetails||'')}</div></div><div class="num">${f.score}%</div></div>
       <div class="bar ${f.level==='Red'?'danger':f.level==='Yellow'?'warn':''}"><i style="width:${f.score}%"></i></div>
       <div class="chips" style="margin-top:10px"><span class="chip">Higher = stronger outlook</span><span class="chip">${f.loggedDays} days</span>${!f.currentStateLogged?'<span class="chip warn">log current state to confirm</span>':''}</div>
-      ${peakForecastLevel5Html(f,displayMove)}
-      <div class="quote" style="margin-top:10px"><b>Peak Aim:</b> ${esc(growthSafeText(f.peakAim||'Make the next block better.'))}</div>
-      <div class="chips" style="margin-top:8px"><span class="chip">${esc(f.moveDomain||'Body / Energy')}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(f.moveMode||'Lift')} purpose</span></div>
-      <div style="margin-top:10px"><h3>Why this forecast looks this way</h3><div class="reasonGroups">${forecastReasonGroupsHtml(f.reasons,f)}</div></div>
+      <div data-forecast-lazy="1" class="tiny" style="margin-top:10px">Details load when opened.</div>
     </details>
   </div>`;
 }
@@ -4961,20 +5424,34 @@ function toggleMinimumWinDone(key){
   key=String(key||'');
   if(!key) return;
   const current=mw.status?.[key];
-  if(current?.status==='done' && current?.manual){
+  const turningOff=!!(current?.status==='done' && current?.manual);
+  if(turningOff){
     delete mw.status[key];
   }else{
     mw.status[key]={status:'done',manual:true,completedAt:new Date().toISOString(),source:'manual_check'};
   }
+  try{
+    const btn=event?.currentTarget;
+    if(btn){
+      btn.classList.toggle('checked',!turningOff);
+      const item=btn.closest('.minimumWinItem');
+      const chip=item?.querySelector('em.chip');
+      if(chip){chip.textContent=turningOff?'Open':'Done'; chip.className='chip '+(turningOff?'warn':'good');}
+      if(item){item.classList.toggle('open',turningOff); item.classList.toggle('done',!turningOff);}
+    }
+  }catch(e){}
+  markInputUpdated();
   save();
   render();
 }
 
 function todayWinsProgress(d=day()){
-  const items=minimumWinItems(d);
-  const statuses=items.map(i=>minimumWinStatusForItem(i,d));
-  const done=statuses.filter(s=>s.label==='Done' || s.label==='Covered').length;
-  return {done,total:items.length,statuses};
+  return renderCacheGet('todayWinsProgress|'+todayKey(),()=>{
+    const items=minimumWinItems(d);
+    const statuses=items.map(i=>minimumWinStatusForItem(i,d));
+    const done=statuses.filter(s=>s.label==='Done' || s.label==='Covered').length;
+    return {done,total:items.length,statuses};
+  });
 }
 
 
@@ -5114,8 +5591,8 @@ return sectionWrap('today', `<div class="grid">
   ${weeklyGuideDue()?renderWeeklyGuidePrompt():''}
   ${renderSaturdayOnlyCard()}
   <div class="card span6" id="guide-today-core"><h2>Life Checks</h2><div class="tiny">Move sliders to log this time block.</div>
-    ${input('range','Energy score',d.energy,'v=>setDay("energy",+v)','min="1" max="10"','energy')}
-    ${input('range','Mood score',d.mood,'v=>setDay("mood",+v)','min="1" max="10"','mood')}
+    ${todayRangeInput('Energy score','energy',d.energy,'min="1" max="10"')}
+    ${todayRangeInput('Mood score','mood',d.mood,'min="1" max="10"')}
     ${input('number','Sleep hours',d.sleep,'v=>setDay("sleep",+v)','step="0.25"')}
     ${d.sleepSource==='night_inputs'?`<div class="tiny" style="margin-top:-4px;margin-bottom:8px">Synced from Pattern → Last night bedtime/wake time. Night Inputs override this number.</div>`:''}
   </div>
@@ -6712,13 +7189,13 @@ function dateKeyForRecord(target){
   return found?found[0]:(target._dateKey||target.date||todayKey());
 }
 function forecastEntriesBefore(dateKey=todayKey(), limit=30){
-  return Object.keys(state.days||{})
+  return renderCacheGet('forecastEntriesBefore|'+String(dateKey)+'|'+String(limit),()=>Object.keys(state.days||{})
     .filter(k=>k<dateKey)
     .sort()
     .reverse()
     .map(k=>({offset:null,key:k,date:k,data:state.days[k]?migrateDay(state.days[k]):null}))
     .filter(e=>e.data&&hasLoggedTodayInput(e.data))
-    .slice(0,limit);
+    .slice(0,limit));
 }
 function forecastRecentEntries(limit=3, beforeKey=todayKey()){
   return forecastEntriesBefore(beforeKey,limit).map((e,i)=>({...e,offset:i+1}));
@@ -7386,6 +7863,10 @@ function buildForecastContext(d=day(), opts={}){
   const dateKey=opts.dateKey||dateKeyForRecord(d);
   const periodKey=opts.periodKey||opts.period||currentGuidePeriod().key;
   const periodLabel=opts.periodLabel||({morning:'Morning',afternoon:'Afternoon',evening:'Evening'})[periodKey]||'Today';
+  const __fcCache=window.__tlccRenderCache;
+  const __fcCanCache=!!(__fcCache && d===state.days?.[todayKey()] && !opts.noCache);
+  const __fcKey='forecastContext|'+dateKey+'|'+periodKey;
+  if(__fcCanCache && __fcCache[__fcKey]) return __fcCache[__fcKey];
   const p=d.pattern||defaultPattern();
   const t=d.therapy||{};
   const log=d._logged||{};
@@ -7493,6 +7974,7 @@ function buildForecastContext(d=day(), opts={}){
     morningHungry:!!lastNight.nextMorningHungry,morningSluggish:!!(lastNight.nextMorningSluggish||lastNight.nextMorningSleptWorse),privateActive:!!privateVariables,noWater,riskTags,riskTagSet:new Set(riskTags)
   };
   contextObj.transitionPattern = transitionPatternForContext(contextObj);
+  try{if(__fcCanCache) __fcCache[__fcKey]=contextObj;}catch(e){}
   return contextObj;
 }
 function forecastMoveContext(ctx={}){
@@ -10290,6 +10772,10 @@ function peakModeClass(mode){
 }
 
 function peakForecast(d=day()){
+  const __pfCache=window.__tlccRenderCache;
+  const __pfCanCache=!!(__pfCache && d===state.days?.[todayKey()]);
+  const __pfKey='peakForecast|'+todayKey()+'|'+currentGuidePeriod().key;
+  if(__pfCanCache && __pfCache[__pfKey]) return __pfCache[__pfKey];
   const ctx=buildForecastContext(d);
   const {periodKey,periodLabel,p,chain,chain7,chain30,loggedDays,todayHasInputs,freshAfterMidnight,currentStateLogged,currentEffectsLogged}=ctx;
   let risk=0, protect=0, signals=[];
@@ -10548,7 +11034,7 @@ function peakForecast(d=day()){
   const peakAim=peakAimForMode(moveMode,ctx,moveChoice);
   const learningGoal=learningGoalForMove(moveMode,ctx,moveChoice);
   const highPoint=peakHighPointSnapshot(ctx);
-  return {
+  const __pfResult = {
     score,level,color:level,confidence:ctx.confidenceLabel,bottlenecks:peakBottlenecks,primaryBottleneck:peakBottlenecks?.primary||null,secondaryBottleneck:peakBottlenecks?.secondary||null,bestLever:peakBottlenecks?.bestLever||'',reasons:signals.slice(0,14),
     move:moveChoice.text,moveId:moveChoice.id,moveType:moveChoice.type,moveCategory:moveChoice.category,moveEffort:moveChoice.effort,moveTarget:moveChoice.target,moveHorizon:moveChoice.horizon,moveSleepRelated:!!moveChoice.sleepRelated,moveTags:moveChoice.tags||[],moveTimeWindows:moveChoice.timeWindows||[],moveMode,moveDomain,peakAim,learningGoal,highPoint,
     movePersonal:moveChoice.personal,moveStats:moveChoice.stats,moveProofProfile:moveChoice.proofProfile||null,moveBestCondition:moveChoice.bestCondition||null,moveWeakCondition:moveChoice.weakCondition||null,moveFitBreakdown:moveChoice.moveFitBreakdown||null,moveFitLabel:moveChoice.moveFitLabel||'',moveCandidates:moveChoice.candidates,
@@ -10556,6 +11042,8 @@ function peakForecast(d=day()){
     readMode:`${periodLabel} Outlook`,readNote,readDetails,timePeriod:periodKey,timeLabel:periodLabel,context:ctx,
     forecastMath:{risk:Math.round(risk*10)/10,protect:Math.round(protect*10)/10,raw:Math.round(rawScore),floor,severeCurrent,weights,useTonightContext:ctx.useTonightContext,bottleneckPrimary:peakBottlenecks?.primary?.key||null,bottleneckScore:peakBottlenecks?.primary?.score||0}
   };
+  try{if(__pfCanCache) __pfCache[__pfKey]=__pfResult;}catch(e){}
+  return __pfResult;
 }
 
 function setPattern(key,val){day().pattern[key]=val; if(key==='bedtime'||key==='wakeTime') syncSleepFromPattern(); save(); render()}
@@ -11743,16 +12231,18 @@ function emergencyReset(){
 function renderWeek(){return sectionWrap('week',`<div class="grid"><div class="card span12" id="guide-weekly-rhythm"><h2>Weekly Rhythm</h2><div class="chips" style="margin-bottom:10px"><button class="btn small primary" onclick="startWeeklyGuide()">Start Weekly Guide</button><span class="chip">${weeklyGuideStatusText()}</span></div><div class="statusGrid">${Object.entries(state.weeklyAnchors).map(([dayName,val])=>`<div class="statusItem"><div class="title">${dayName}</div><input value="${val}" onchange='state.weeklyAnchors[${JSON.stringify(dayName)}]=this.value;save();render()'><div class="tiny" style="margin-top:8px">One must-do · one maintenance task · one human thing</div></div>`).join('')}</div></div></div>`)}
 function renderVision(){return sectionWrap('vision',`<div class="grid"><div class="card span6"><h2>3-Year Direction</h2><ul class="mini-list"><li>Azure Cloud Administrator / Cloud Systems Administrator</li><li>Higher income and stronger career proof</li><li>Car paid off</li><li>Rental-property fund growing</li><li>Roth IRA funded yearly</li><li>Better health and endurance</li><li>Emotionally grounded father</li><li>Stable, attractive, disciplined life</li></ul></div><div class="card span6"><h2>Thermostat</h2><div class="quote">Raise identity standards, not lifestyle spending.</div><ul class="mini-list"><li>Raise discipline, health, fatherhood, career, and financial standards.</li><li>Do not raise random spending just because income increases.</li><li>Strong life = calm habits repeated.</li></ul></div></div>`)}
 function recentEntries(daysBack=7){
-  if(daysBack==='all'){
-    return Object.keys(state.days||{}).sort().map(k=>({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null}));
-  }
-  const out=[];
-  const base=todayKey();
-  for(let i=daysBack-1;i>=0;i--){
-    const k=offsetDateKey(base,-i);
-    out.push({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null});
-  }
-  return out;
+  return renderCacheGet('recentEntries|'+String(daysBack)+'|'+todayKey(),()=>{
+    if(daysBack==='all'){
+      return Object.keys(state.days||{}).sort().map(k=>({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null}));
+    }
+    const out=[];
+    const base=todayKey();
+    for(let i=daysBack-1;i>=0;i--){
+      const k=offsetDateKey(base,-i);
+      out.push({date:k, data: state.days[k] ? migrateDay(state.days[k]) : null});
+    }
+    return out;
+  });
 }
 function average(nums){const clean=nums.filter(n=>typeof n==='number'&&!Number.isNaN(n)); return clean.length?Math.round((clean.reduce((a,b)=>a+b,0)/clean.length)*10)/10:null}
 function yesRate(entries, path){const days=entries.filter(e=>e.data); if(!days.length)return 0; const yes=days.filter(e=>{let o=e.data; for(const p of path){if(!o)return false; o=o[p]} return !!o}).length; return Math.round((yes/days.length)*100)}
@@ -11908,6 +12398,7 @@ function buildMoodTimelineExport(entries){
 }
 
 function buildLifeUpdate(daysBack=7){
+  try{commitFocusedField(); commitPendingRangeDrafts('life-update-build',{save:false});}catch(e){}
   migrate(state);
   captureTodaySnapshot();
   const entries=recentEntries(daysBack);
@@ -12084,6 +12575,7 @@ function safeJsonDownload(obj,filename,pretty=true){
   return raw.length;
 }
 function buildFastBackupExport(){
+  try{commitFocusedField(); commitPendingRangeDrafts('fast-backup-build',{save:false});}catch(e){}
   migrate(state);
   captureTodaySnapshot();
   const backup=deepClone(state);
@@ -12107,7 +12599,7 @@ async function exportLifeUpdate(daysBack=7){
   try{
     setExportProgress(10,'Saving current input before export...');
     await exportSleep(50);
-    try{commitFocusedField();}catch(_e){}
+    try{commitFocusedField(); commitPendingRangeDrafts('life-update-export',{save:false}); save(true); flushPendingSaveNow('export');}catch(_e){}
     try{flushDeferredRecoveryWrites();}catch(_e){}
     setExportProgress(28,'Collecting recent day data...');
     await exportSleep(60);
@@ -12246,8 +12738,8 @@ function storageStatusHtml(){
   const label=localOk&&!local?'active + father/Adaya vault':(sessionOk||local?'volatile / same-tab fallback':'blocked');
   return `<div class="storageStatus ${cls}"><b>Cache:</b> ${esc(label)}<br><span class="tiny">${esc(msg)}</span></div>`;
 }
-function copyBackupJSON(){try{flushDeferredRecoveryWrites();}catch(e){}
-  try{commitFocusedField(); save(true);}catch(e){}
+function copyBackupJSON(){
+  try{commitFocusedField(); commitPendingRangeDrafts('copy-backup',{save:false}); save(true); flushPendingSaveNow('export'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){}
   const raw=JSON.stringify(buildFullBackupExport());
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(raw).then(()=>alert('Backup copied.')).catch(()=>showBackupBox(raw));
@@ -12705,6 +13197,7 @@ function level5ReviewHandoffPackage(daysBack=7){
 }
 
 function buildLevel5ReviewExport(daysBack=7){
+  try{commitFocusedField(); commitPendingRangeDrafts('level5-build',{save:false});}catch(e){}
   migrate(state);
   captureTodaySnapshot();
   const entries=recentEntries(daysBack);
@@ -12809,8 +13302,9 @@ async function exportLevel5Review(daysBack=7){
   const label=daysBack==='all'?'Starting full Level 5 Review export...':`Starting ${daysBack}-day Level 5 Review export...`;
   if(!startExportProgress(label)) return;
   try{
-    setExportProgress(12,'Collecting Level 5 domains...');
+    setExportProgress(12,'Saving current input and collecting Level 5 domains...');
     await exportSleep(60);
+    try{commitFocusedField(); commitPendingRangeDrafts('level5-export',{save:false}); save(true); flushPendingSaveNow('export');}catch(_e){}
     const update=buildLevel5ReviewExport(daysBack);
     setExportProgress(78,'Preparing review JSON download...');
     await exportSleep(45);
@@ -13167,6 +13661,7 @@ function renderData(){
   </div>`)
 }
 function buildFullBackupExport(){
+  try{commitFocusedField(); commitPendingRangeDrafts('full-backup-build',{save:false});}catch(e){}
   migrate(state);
   captureTodaySnapshot();
   const backup=deepClone(state);
@@ -13198,10 +13693,10 @@ function buildFullBackupExport(){
   return backup;
 }
 function exportData(){downloadBackupNow('manual')}
-function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj);active=state.settings?.activeTab||'today';guideState=state.settings?.guideState||null;save(true);render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
-function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); render(); alert('App data reset.')}}
+function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj); renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; active=state.settings?.activeTab||'today';guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
+function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); navTabsBuilt=false; renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; render(); alert('App data reset.')}}
 function toggleTheme(){state.theme='dark'; state.settings=state.settings||{}; state.settings.themeLocked='dark'; save(); render()}
-function saveOnExit(){try{commitFocusedField(); save(true);}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedRaw(JSON.stringify(state));}catch(err){}}}
+function saveOnExit(){try{commitFocusedField(); commitPendingRangeDrafts('exit',{save:false}); save(true); flushPendingSaveNow('exit'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedRaw(JSON.stringify(state)); flushSecondaryStorageWrites();}catch(err){}}}
 function isExportDownloadControl(e){
   try{
     const el=e&&e.target&&e.target.closest&&e.target.closest('button,label,a,input');
@@ -13226,17 +13721,19 @@ window.addEventListener('storage', e=>{
 });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveOnExit(); else setTimeout(()=>{try{mergeLatestSharedStateIfNewer(true); resetGuideOnTimeframeChange()}catch(e){}},80); });
 document.addEventListener('input', e=>{
-  queueInputUpdatedFromEvent(e);
-  if(e.target&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) scheduleAutosave();
+  const isRange=e.target&&e.target.tagName==='INPUT'&&String(e.target.type||'').toLowerCase()==='range';
+  if(!isRange) queueInputUpdatedFromEvent(e);
+  if(!isRange && e.target&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) scheduleAutosave();
 }, true);
 document.addEventListener('change', e=>{
-  queueInputUpdatedFromEvent(e);
-  if(e.target&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) setTimeout(()=>{try{save(true)}catch(err){}},0);
+  const isRange=e.target&&e.target.tagName==='INPUT'&&String(e.target.type||'').toLowerCase()==='range';
+  if(!isRange) queueInputUpdatedFromEvent(e);
+  if(!isRange && e.target&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) scheduleAutosave();
 }, true);
 document.addEventListener('click', e=>{
   queueInputUpdatedFromEvent(e);
   // Button handlers already save when they change data. Avoid saving the entire app on every tab/button click.
-  if(e.target&&['INPUT','SELECT'].includes(e.target.tagName)) setTimeout(()=>{try{save(true)}catch(err){}},0);
+  if(e.target&&['INPUT','SELECT'].includes(e.target.tagName)) scheduleAutosave();
 }, true);
 
 function handleNightTargetEvent(e){
