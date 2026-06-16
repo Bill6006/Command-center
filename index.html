@@ -590,6 +590,8 @@ try{state=loadState();}catch(e){try{console.error('TLCC boot loadState failed',e
 try{active = state?.settings?.activeTab || safeLocalGet('tlcc_active') || 'today';}catch(e){active='today';}
 try{if(!tabs.some(([id])=>id===active)) active='today';}catch(e){active='today';}
 try{guideState = state?.settings?.guideState || null;}catch(e){guideState=null;}
+let domainHashCache={};
+try{domainHashCache=computeDomainHashes(state);}catch(e){domainHashCache={};}
 function deepClone(o){return JSON.parse(JSON.stringify(o))}
 function safeLocalGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function safeLocalSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
@@ -959,6 +961,7 @@ function rawSaveStamp(raw){
     const obj=JSON.parse(raw);
     const stamps=[obj._savedAt, obj._lastSaveAt, obj._inputUpdatedAt, obj.settings?.autoBackupLastAt];
     let times=stamps.map(stampFromIso).filter(Boolean);
+    try{Object.values(obj._domainUpdatedAt||{}).forEach(v=>{const t=stampFromIso(v); if(t) times.push(t);});}catch(e){}
     const guideStamp=guideCompletionStampFromSettings(obj.settings);
     if(guideStamp) times.push(guideStamp);
     if(obj.days){Object.values(obj.days).forEach(d=>times.push(daySaveStamp(d)));}
@@ -1155,6 +1158,200 @@ function guideCompletionStampFromSettings(settings){
     return stamps.length?Math.max(...stamps):0;
   }catch(e){return 0;}
 }
+
+function globalCanonicalDomains(){return ['azure','money','adaya','faith','learning','weeklyAnchors'];}
+function jsonStableValue(v){try{return JSON.stringify(v===undefined?null:v)}catch(e){return ''}}
+function globalDomainSnapshot(s,domain){
+  try{
+    s=s||{};
+    if(domain==='azure') return {skills:s.azure?.skills||{},claims:s.azure?.claims||{},proof:s.azure?.proof||{}};
+    if(domain==='money') return s.money||{};
+    if(domain==='adaya') return s.adaya||{};
+    if(domain==='faith') return s.faith||{};
+    if(domain==='learning') return s.learning||{};
+    if(domain==='weeklyAnchors') return s.weeklyAnchors||{};
+  }catch(e){}
+  return null;
+}
+function computeDomainHashes(s){
+  const out={};
+  try{globalCanonicalDomains().forEach(d=>out[d]=jsonStableValue(globalDomainSnapshot(s,d)));}catch(e){}
+  return out;
+}
+function azureProofStageIndexSafe(stage){
+  const stages=['Watched / Read','Practiced','Built once','Broke / Fixed','Screenshot saved','Explained from memory','Resume bullet ready'];
+  const aliases={'Not Started':'Watched / Read','Learning':'Practiced','Built Once':'Built once','Broke/Fix Logged':'Broke / Fixed','Screenshot Saved':'Screenshot saved','Can Explain From Memory':'Explained from memory','Resume Ready':'Resume bullet ready','Built / Done':'Built once','Defendable':'Explained from memory','Practiced':'Practiced'};
+  stage=aliases[String(stage||'')]||String(stage||'');
+  const i=stages.indexOf(stage);
+  return i<0?0:i;
+}
+function azureProofStageLabelSafe(stage){
+  const stages=['Watched / Read','Practiced','Built once','Broke / Fixed','Screenshot saved','Explained from memory','Resume bullet ready'];
+  const aliases={'Not Started':'Watched / Read','Learning':'Practiced','Built Once':'Built once','Broke/Fix Logged':'Broke / Fixed','Screenshot Saved':'Screenshot saved','Can Explain From Memory':'Explained from memory','Resume Ready':'Resume bullet ready','Built / Done':'Built once','Defendable':'Explained from memory','Practiced':'Practiced'};
+  stage=aliases[String(stage||'')]||String(stage||'');
+  return stages[azureProofStageIndexSafe(stage)]||stages[0];
+}
+function azureStatusFromProofStageSafe(stage){
+  const idx=azureProofStageIndexSafe(stage);
+  if(idx>=6) return 'Resume Ready';
+  if(idx>=5) return 'Can Explain From Memory';
+  if(idx>=4) return 'Screenshot Saved';
+  if(idx>=3) return 'Broke/Fix Logged';
+  if(idx>=2) return 'Built Once';
+  if(idx>=1) return 'Learning';
+  return 'Not Started';
+}
+function azureStageFromSkillStatusSafe(status){return azureProofStageLabelSafe(status||'Watched / Read');}
+function azureDomainMeaningScore(s){
+  try{
+    const az=s?.azure||{}; const skills=az.skills||{}; const proof=az.proof||{};
+    let score=0;
+    if(proof.currentSkill) score+=5;
+    if(Array.isArray(proof.proofLog)) score+=proof.proofLog.length*8;
+    if(Array.isArray(proof.weakTopics)) score+=proof.weakTopics.length;
+    if(Array.isArray(proof.proofQueue)) proof.proofQueue.forEach(r=>{score+=azureProofStageIndexSafe(r?.stage)*10; if(r?.lastProofAt) score+=2; if(r?.notes) score+=1; if(r?.resumeBullet) score+=3;});
+    Object.values(skills).forEach(v=>{score+=azureProofStageIndexSafe(azureStageFromSkillStatusSafe(v))*4;});
+    return score;
+  }catch(e){return 0;}
+}
+function domainMeaningScore(s,domain){
+  try{
+    if(domain==='azure') return azureDomainMeaningScore(s);
+    if(domain==='adaya') return Object.values(s?.adaya?.skills||{}).filter(v=>normalizeAdayaStage(v)!=='Not Introduced').length*10 + ((s?.adaya?.customSkills||[]).length*2);
+    if(domain==='learning') return (s?.learning?.cards||[]).length*5 + (s?.learning?.reps||[]).length*5 + (s?.learning?.weakTopics||[]).length;
+    if(domain==='faith') {const f=s?.faith||{}; const def=defaultFaithProgress(); return (Number(f.currentBook||1)!==Number(def.currentBook)||Number(f.currentSubject||1)!==Number(def.currentSubject)?10:0) + (Number(f.weeklyPreachGoal||0)!==Number(def.weeklyPreachGoal||0)?2:0);}
+    if(domain==='money') return jsonStableValue(s?.money||{})===jsonStableValue(SEED.money||{})?0:5;
+    if(domain==='weeklyAnchors') return jsonStableValue(s?.weeklyAnchors||{})===jsonStableValue(SEED.weeklyAnchors||{})?0:5;
+  }catch(e){}
+  return 0;
+}
+function globalDomainStamp(s,domain){
+  try{
+    const direct=stampFromIso(s?._domainUpdatedAt?.[domain]);
+    if(direct) return direct;
+    if(domain==='azure'){
+      const proof=s?.azure?.proof||{}; const stamps=[proof.lastProofAt];
+      (proof.proofQueue||[]).forEach(r=>stamps.push(r?.lastProofAt));
+      (proof.proofLog||[]).forEach(r=>stamps.push(r?.at||r?.date));
+      (proof.weakTopics||[]).forEach(r=>stamps.push(r?.addedAt||r?.closedAt));
+      const times=stamps.map(stampFromIso).filter(Boolean);
+      if(times.length) return Math.max(...times);
+    }
+    if(domain==='adaya') return adayaSaveStamp(s?.adaya||{});
+    if(domain==='learning'){
+      const l=s?.learning||{}; const stamps=[l.lastReviewAt];
+      (l.cards||[]).forEach(c=>stamps.push(c?.createdAt||c?.lastReviewedAt));
+      (l.reps||[]).forEach(r=>stamps.push(r?.at));
+      const times=stamps.map(stampFromIso).filter(Boolean); if(times.length) return Math.max(...times);
+    }
+  }catch(e){}
+  return 0;
+}
+function repairAzureCanonicalState(s,opts={}){
+  try{
+    if(!s) return s;
+    s.azure=s.azure||{skills:{},claims:{}};
+    const az=s.azure;
+    az.skills=az.skills||{}; az.claims=az.claims||{};
+    const before=jsonStableValue({skills:az.skills,proof:az.proof});
+    if(!az.proof || typeof az.proof!=='object' || Array.isArray(az.proof)) az.proof={currentSkill:'',proofQueue:[],proofLog:[],weakTopics:[],explainQueue:[],lastProofAt:null};
+    const p=az.proof;
+    if(!Array.isArray(p.proofQueue)) p.proofQueue=[];
+    if(!Array.isArray(p.proofLog)) p.proofLog=[];
+    if(!Array.isArray(p.weakTopics)) p.weakTopics=[];
+    if(!Array.isArray(p.explainQueue)) p.explainQueue=[];
+    try{SEED.azureSkills.forEach(k=>{if(!az.skills[k]) az.skills[k]='Not Started';});}catch(e){}
+    const bySkill={};
+    p.proofQueue.forEach(rec=>{if(rec&&rec.skill){rec.stage=azureProofStageLabelSafe(rec.stage||az.skills[rec.skill]); bySkill[rec.skill]=rec;}});
+    Object.keys(az.skills||{}).forEach(skill=>{
+      const skillStage=azureStageFromSkillStatusSafe(az.skills[skill]);
+      let rec=bySkill[skill];
+      if(!rec && azureProofStageIndexSafe(skillStage)>0){
+        rec={skill,stage:skillStage,screenshots:0,brokeFixed:0,explainConfidence:0,lastProofAt:p.lastProofAt||s._inputUpdatedAt||s._savedAt||null,notes:'',resumeBullet:''};
+        p.proofQueue.push(rec); bySkill[skill]=rec;
+      }else if(rec && azureProofStageIndexSafe(skillStage)>azureProofStageIndexSafe(rec.stage)){
+        rec.stage=skillStage;
+      }
+      if(rec && azureProofStageIndexSafe(rec.stage)>azureProofStageIndexSafe(skillStage)){
+        az.skills[skill]=azureStatusFromProofStageSafe(rec.stage);
+      }
+    });
+    p.proofQueue.forEach(rec=>{if(rec&&rec.skill){rec.stage=azureProofStageLabelSafe(rec.stage); if(azureProofStageIndexSafe(rec.stage)>azureProofStageIndexSafe(az.skills[rec.skill])) az.skills[rec.skill]=azureStatusFromProofStageSafe(rec.stage);}});
+    if(!p.currentSkill || !az.skills[p.currentSkill]){
+      let latest=null;
+      p.proofQueue.forEach(rec=>{const t=stampFromIso(rec?.lastProofAt); if(rec?.skill && (!latest || t>=latest.t)) latest={skill:rec.skill,t,idx:azureProofStageIndexSafe(rec.stage)};});
+      if(!latest || !latest.idx){
+        Object.keys(az.skills||{}).forEach(skill=>{const idx=azureProofStageIndexSafe(azureStageFromSkillStatusSafe(az.skills[skill])); if(idx>0 && (!latest || idx>latest.idx)) latest={skill,t:0,idx};});
+      }
+      if(latest?.skill) p.currentSkill=latest.skill;
+    }
+    const after=jsonStableValue({skills:az.skills,proof:az.proof});
+    if(opts.stamp!==false && before!==after){
+      s._domainUpdatedAt=s._domainUpdatedAt||{};
+      s._domainUpdatedAt.azure=new Date().toISOString();
+    }
+  }catch(e){}
+  return s;
+}
+function repairGlobalCanonicalStateForSave(s=state, opts={}){
+  try{
+    if(!s) return s;
+    s._domainUpdatedAt=s._domainUpdatedAt||{};
+    try{repairAzureCanonicalState(s,{stamp:false});}catch(e){}
+    try{Object.values(s.days||{}).forEach(d=>repairCanonicalRangeLogsForDay(d));}catch(e){}
+    if(opts.touchChanged!==false){
+      const now=opts.at||new Date().toISOString();
+      const nextHashes=computeDomainHashes(s);
+      globalCanonicalDomains().forEach(domain=>{
+        if(domainHashCache && domainHashCache[domain]!==undefined && nextHashes[domain]!==domainHashCache[domain]) s._domainUpdatedAt[domain]=now;
+      });
+      domainHashCache=nextHashes;
+    }
+  }catch(e){}
+  return s;
+}
+function shouldCopyGlobalDomain(target, source, domain){
+  try{
+    const sourceScore=domainMeaningScore(source,domain);
+    const targetScore=domainMeaningScore(target,domain);
+    const sourceStamp=globalDomainStamp(source,domain);
+    const targetStamp=globalDomainStamp(target,domain);
+    const sourceJson=jsonStableValue(globalDomainSnapshot(source,domain));
+    const targetJson=jsonStableValue(globalDomainSnapshot(target,domain));
+    if(sourceJson===targetJson) return false;
+    if(sourceStamp && targetStamp) return sourceStamp>targetStamp || (sourceStamp===targetStamp && sourceScore>=targetScore);
+    if(sourceStamp && !targetStamp) return sourceScore>=targetScore || sourceScore>0;
+    if(!sourceStamp && targetStamp) return sourceScore>targetScore && meaningfulStateStamp(source)>=meaningfulStateStamp(target);
+    if(sourceScore!==targetScore) return sourceScore>targetScore;
+    return meaningfulStateStamp(source)>=meaningfulStateStamp(target) || stampFromIso(source?._savedAt)>=stampFromIso(target?._savedAt);
+  }catch(e){return false;}
+}
+function mergeDomainUpdatedAt(target, a, b){
+  try{
+    target._domainUpdatedAt=target._domainUpdatedAt||{};
+    const keys=new Set([...Object.keys(a?._domainUpdatedAt||{}),...Object.keys(b?._domainUpdatedAt||{})]);
+    keys.forEach(k=>{
+      const av=stampFromIso(a?._domainUpdatedAt?.[k]); const bv=stampFromIso(b?._domainUpdatedAt?.[k]);
+      target._domainUpdatedAt[k]=av>=bv?(a?._domainUpdatedAt?.[k]||target._domainUpdatedAt[k]):(b?._domainUpdatedAt?.[k]||target._domainUpdatedAt[k]);
+    });
+  }catch(e){}
+  return target;
+}
+function mergeGlobalCanonicalDomains(merged, localState, savedState){
+  try{
+    merged._domainUpdatedAt=merged._domainUpdatedAt||{};
+    ['azure','money','faith','learning','weeklyAnchors'].forEach(domain=>{
+      if(shouldCopyGlobalDomain(merged,savedState,domain)){
+        if(domain==='weeklyAnchors') merged.weeklyAnchors=deepClone(savedState.weeklyAnchors||{});
+        else merged[domain]=deepClone(savedState[domain]||{});
+      }
+    });
+    if(savedState.adaya && (shouldCopyGlobalDomain(merged,savedState,'adaya') || shouldUseImportedAdaya(merged.adaya,savedState.adaya))) merged.adaya=deepClone(savedState.adaya);
+    mergeDomainUpdatedAt(merged, localState, savedState);
+    try{repairAzureCanonicalState(merged,{stamp:false});}catch(e){}
+  }catch(e){}
+  return merged;
+}
 function copyGuideCompletionIfNewer(targetSettings, sourceSettings, period){
   try{
     const t=targetSettings||{}; const s=sourceSettings||{};
@@ -1186,6 +1383,8 @@ function meaningfulStateStamp(s){
     const stamps=[s?._inputUpdatedAt,s?._lastMeaningfulInputAt].map(stampFromIso).filter(Boolean);
     const guideStamp=guideCompletionStampFromSettings(s?.settings);
     if(guideStamp) stamps.push(guideStamp);
+    try{globalCanonicalDomains().forEach(domain=>{const t=globalDomainStamp(s,domain); if(t) stamps.push(t);});}catch(e){}
+    try{Object.values(s?._domainUpdatedAt||{}).forEach(v=>{const t=stampFromIso(v); if(t) stamps.push(t);});}catch(e){}
     Object.values(s?.days||{}).forEach(d=>stamps.push(meaningfulDayStamp(d)));
     return stamps.length?Math.max(...stamps):0;
   }catch(e){return 0;}
@@ -1210,102 +1409,22 @@ function latestSharedSavedRaw(){
 function parseStateRaw(raw){
   try{return raw?migrate(restoreDayCachesIntoState(JSON.parse(raw))):null;}catch(e){return null;}
 }
-
-function mergeLoggedFlagsPreserveTrue(a={},b={}){
-  const out=Object.assign({},a||{},b||{});
-  try{new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(k=>{if(a?.[k]===true || b?.[k]===true) out[k]=true;});}catch(e){}
-  return out;
-}
-function newerIso(a,b){return stampFromIso(a)>=stampFromIso(b)?a:b;}
-function mergeRangePeriodsPreserveNewest(a={},b={}){
-  const out=deepClone(a||{});
-  try{
-    Object.entries(b||{}).forEach(([key,periods])=>{
-      out[key]=out[key]||{};
-      Object.entries(periods||{}).forEach(([period,row])=>{
-        const existing=out[key]?.[period];
-        if(!existing || stampFromIso(row?.loggedAt)>=stampFromIso(existing?.loggedAt)) out[key][period]=deepClone(row);
-      });
-    });
-  }catch(e){}
-  return out;
-}
-function mergeArrayRecordsPreserveUnique(a=[],b=[]){
-  const out=[]; const seen=new Set();
-  const add=x=>{try{const id=x?.id||x?.at||x?.loggedAt||x?.completedAt||JSON.stringify(x); if(seen.has(id)) return; seen.add(id); out.push(deepClone(x));}catch(e){out.push(deepClone(x));}};
-  (Array.isArray(a)?a:[]).forEach(add); (Array.isArray(b)?b:[]).forEach(add);
-  try{out.sort((x,y)=>stampFromIso(x?.at||x?.loggedAt||x?.completedAt)-stampFromIso(y?.at||y?.loggedAt||y?.completedAt));}catch(e){}
-  return out;
-}
-function mergeBooleanObjectOr(a={},b={}){
-  const out=Object.assign({},a||{},b||{});
-  try{new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(k=>{if(typeof a?.[k]==='boolean'||typeof b?.[k]==='boolean') out[k]=!!(a?.[k]||b?.[k]); else if((out[k]===undefined||out[k]===''||out[k]===null) && b?.[k]) out[k]=deepClone(b[k]);});}catch(e){}
-  return out;
-}
-function mergeRecoveryPreserveAnchors(a={},b={}){
-  const out=Object.assign({},a||{},b||{});
-  try{
-    ['caffeineCutoff','phoneBoundary','wakeTimeSet','morningCue','tomorrowMinimum','bedroomReady','lightCloseout'].forEach(k=>{out[k]=!!(a?.[k]||b?.[k]); out[k+'At']=newerIso(a?.[k+'At'],b?.[k+'At'])||out[k+'At'];});
-    ['targetBedtime','targetWakeTime','morningCueText','tomorrowMinimumText','notes'].forEach(k=>{if(!String(out[k]||'').trim()) out[k]=a?.[k]||b?.[k]||'';});
-    if(stampFromIso(a?.nextAnchorSkippedAt)>stampFromIso(b?.nextAnchorSkippedAt)){out.nextAnchorSkippedKey=a.nextAnchorSkippedKey; out.nextAnchorSkippedDate=a.nextAnchorSkippedDate; out.nextAnchorSkippedAt=a.nextAnchorSkippedAt;}
-  }catch(e){}
-  return out;
-}
-function syncTopLevelFromLatestRangePeriods(d){
-  try{
-    const set=(key,fn)=>{
-      const rows=Object.values(d._rangePeriods?.[key]||{}).filter(r=>numberOrNull(r?.value)!==null);
-      if(!rows.length) return;
-      rows.sort((a,b)=>stampFromIso(b.loggedAt)-stampFromIso(a.loggedAt));
-      fn(numberOrNull(rows[0].value));
-    };
-    d.therapy=d.therapy||{}; d.pattern=d.pattern||defaultPattern();
-    set('energy',v=>{d.energy=v}); set('mood',v=>{d.mood=v});
-    set('therapyStress',v=>{d.therapy.stress=v}); set('therapyLoneliness',v=>{d.therapy.loneliness=v});
-    set('therapyConfidence',v=>{d.therapy.confidence=v}); set('therapyOverwhelm',v=>{d.therapy.overwhelm=v});
-    set('pattern.irritability',v=>{d.pattern.irritability=v; d.pattern.currentEffectsLogged=true});
-    set('pattern.focusLevel',v=>{d.pattern.focusLevel=v; d.pattern.currentEffectsLogged=true});
-    set('pattern.driveLevel',v=>{d.pattern.driveLevel=v; d.pattern.currentEffectsLogged=true});
-  }catch(e){}
-  return d;
-}
-function mergeDayRecordsPreserveInputs(localDay,savedDay){
-  if(!localDay) return migrateDay(deepClone(savedDay||defaultDay()));
-  if(!savedDay) return migrateDay(deepClone(localDay||defaultDay()));
-  const a=migrateDay(deepClone(localDay));
-  const b=migrateDay(deepClone(savedDay));
-  const base=meaningfulDayStamp(b)>=meaningfulDayStamp(a)?deepClone(b):deepClone(a);
-  const other=meaningfulDayStamp(b)>=meaningfulDayStamp(a)?a:b;
-  try{
-    base._logged=mergeLoggedFlagsPreserveTrue(other._logged,base._logged);
-    base._rangePeriods=mergeRangePeriodsPreserveNewest(other._rangePeriods,base._rangePeriods);
-    ['moodTimeline','energyTimeline','forecastActions','forecastDismissals','azureSessions','privateEvents'].forEach(k=>{base[k]=mergeArrayRecordsPreserveUnique(other[k],base[k]);});
-    base.dayFood=base.dayFood||defaultDayFood(); other.dayFood=other.dayFood||defaultDayFood();
-    ['morning','afternoon','evening'].forEach(p=>{base.dayFood[p]=mergeBooleanObjectOr(other.dayFood?.[p]||{},base.dayFood?.[p]||{});});
-    base.morningStart=mergeBooleanObjectOr(other.morningStart||{},base.morningStart||{});
-    base.recovery=mergeRecoveryPreserveAnchors(other.recovery||{},base.recovery||{});
-    ['water','workout','azure','money','fatherCheck','home','socialCheck','night'].forEach(k=>{base[k]=!!(base[k]||other[k]);});
-    if(base.health&&other.health) base.health=mergeBooleanObjectOr(other.health,base.health);
-    if(base.father&&other.father){base.father.daily=mergeBooleanObjectOr(other.father.daily||{},base.father.daily||{}); base.father.coaching=mergeBooleanObjectOr(other.father.coaching||{},base.father.coaching||{});}
-    if(base.social&&other.social) base.social=mergeBooleanObjectOr(other.social,base.social);
-    if(base.moneyDiscipline&&other.moneyDiscipline) base.moneyDiscipline=mergeBooleanObjectOr(other.moneyDiscipline,base.moneyDiscipline);
-    if(!String(base.notes||'').trim() && String(other.notes||'').trim()) base.notes=other.notes;
-    base.review=Object.assign({},other.review||{},base.review||{});
-    base.inputUpdatedAt=newerIso(base.inputUpdatedAt,other.inputUpdatedAt)||base.inputUpdatedAt||other.inputUpdatedAt;
-    base.lastUpdated=newerIso(base.lastUpdated,other.lastUpdated)||base.lastUpdated||other.lastUpdated;
-    base._savedAt=newerIso(base._savedAt,other._savedAt)||base._savedAt||other._savedAt;
-    syncTopLevelFromLatestRangePeriods(base);
-  }catch(e){}
-  return migrateDay(base);
-}
 function mergeStatesNewestWins(localState, savedState){
   localState=migrate(localState||{});
   savedState=migrate(savedState||{});
   const merged=deepClone(localState);
   merged.days=merged.days||{};
-  const dayKeys=new Set([...Object.keys(localState.days||{}),...Object.keys(savedState.days||{})]);
-  dayKeys.forEach(k=>{
-    merged.days[k]=mergeDayRecordsPreserveInputs(localState.days?.[k], savedState.days?.[k]);
+  Object.entries(savedState.days||{}).forEach(([k,sd])=>{
+    const ld=merged.days[k];
+    if(!ld || meaningfulDayStamp(sd)>meaningfulDayStamp(ld)){
+      merged.days[k]=migrateDay(deepClone(sd));
+    }
+  });
+  Object.entries(localState.days||{}).forEach(([k,ld])=>{
+    const sd=savedState.days?.[k];
+    if(!sd || meaningfulDayStamp(ld)>=meaningfulDayStamp(sd)){
+      merged.days[k]=migrateDay(deepClone(ld));
+    }
   });
   const savedNewer=meaningfulStateStamp(savedState)>meaningfulStateStamp(localState);
   if(savedNewer){
@@ -1319,7 +1438,7 @@ function mergeStatesNewestWins(localState, savedState){
   // This prevents a newer Evening/Morning/Afternoon Done flag from being lost when saved-state
   // candidates are merged after refresh/reload.
   merged.settings=mergeGuideCompletionSettings(mergeGuideCompletionSettings(merged.settings||{}, localState.settings||{}), savedState.settings||{});
-  if(savedState.adaya && shouldUseImportedAdaya(merged.adaya, savedState.adaya)) merged.adaya=deepClone(savedState.adaya);
+  mergeGlobalCanonicalDomains(merged, localState, savedState);
   if(stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
   return migrate(merged);
 }
@@ -1483,6 +1602,8 @@ function migrate(s){
   SEED.resumeClaims.forEach(c=>{if(!s.azure.claims[c.claim]) s.azure.claims[c.claim]=normalizeClaimStatus(c.status)}); Object.keys(s.azure.claims).forEach(k=>{s.azure.claims[k]=normalizeClaimStatus(s.azure.claims[k]);});
   if(!s.adaya) s.adaya={skills:{},customSkills:[],weekly:{}};
   if(!s.settings) s.settings={};
+  if(!s._domainUpdatedAt || typeof s._domainUpdatedAt!=='object' || Array.isArray(s._domainUpdatedAt)) s._domainUpdatedAt={};
+  try{repairAzureCanonicalState(s,{stamp:false});}catch(e){}
   s.theme='dark'; s.settings.themeLocked='dark';
   s.settings.timeZone=APP_TIME_ZONE;
   s.settings.timeZoneLabel=APP_TIME_ZONE_LABEL;
@@ -1583,6 +1704,7 @@ function snapshotGlobalState(){
     azure:{
       skills:deepClone(azureSkills),
       claims:deepClone(azureClaims),
+      proof:deepClone(state.azure?.proof||{}),
       skillStageCounts:Object.values(azureSkills).reduce((a,v)=>{a[v]=(a[v]||0)+1;return a},{}),
       claimStatusCounts:Object.values(azureClaims).reduce((a,v)=>{a[v]=(a[v]||0)+1;return a},{})
     },
@@ -1729,6 +1851,7 @@ function scheduleSaveFlush(delay=450){
 function prepStateForSave(skipSnapshot=false){
   try{maybeMarkInputUpdated();}catch(e){}
   try{syncLinkedFieldsForDay();}catch(e){}
+  try{repairGlobalCanonicalStateForSave(state,{touchChanged:true});}catch(e){}
   state.settings=state.settings||{};
   state.settings.activeTab=active||'today';
   state.settings.guideState=guideState?deepClone(guideState):null;
@@ -1752,10 +1875,11 @@ function prepStateForSave(skipSnapshot=false){
   }catch(e){}
 }
 function save(skipSnapshot=false){
-  // Perf3: do not run linked-field sync, expired forecast cleanup, snapshots, or JSON.stringify in the tap path.
-  // Data-integrity fix: pending slider drafts must enter canonical state before any durable save/export.
+  // Global data-integrity fix: every committed input must be durable immediately.
+  // Fast drag paths stay DOM-only until final commit; final commits/buttons/checks now write the canonical state before refresh/export can race it.
   try{if(!committingPendingRangeDrafts) commitPendingRangeDrafts('save',{save:false});}catch(e){}
   try{maybeMarkInputUpdated();}catch(e){}
+  try{repairGlobalCanonicalStateForSave(state,{touchChanged:true});}catch(e){}
   state.settings=state.settings||{};
   state.settings.activeTab=active||'today';
   state.settings.guideState=guideState?deepClone(guideState):null;
@@ -1772,7 +1896,8 @@ function save(skipSnapshot=false){
   }catch(e){}
   saveDirty=true;
   updateSaveStatus();
-  scheduleSaveFlush(520);
+  // Correctness-first: primary localStorage write happens now; duplicate backup/cache writes remain deferred in writeSavedRaw().
+  flushPendingSaveNow('force');
 }
 function flushPendingSaveNow(reason='manual'){
   try{
@@ -5652,12 +5777,9 @@ function azureProofStageIndex(stage){
 }
 function azureProofStageLabel(stage){return AZURE_PROOF_STAGES[azureProofStageIndex(stage)]||AZURE_PROOF_STAGES[0];}
 function azureProofStageFromSkillStatus(status){
-  status=normalizeClaimStatus(status||'Not True Yet');
-  if(status==='Resume Ready') return 'Resume bullet ready';
-  if(status==='Defendable') return 'Explained from memory';
-  if(status==='Built / Done') return 'Built once';
-  if(status==='Practiced') return 'Practiced';
-  return 'Watched / Read';
+  // Accept both the older skill tracker labels and the newer claim/proof labels.
+  // Regression fix: 'Screenshot Saved' previously normalized to 'Not True Yet', which could make proof reload as 0%.
+  return azureStageFromSkillStatusSafe(status||'Not Started');
 }
 
 function azureProofTypeLabel(type){
@@ -5784,7 +5906,10 @@ function azureProofProgress(){
   };
 }
 function setAzureCurrentSkill(skill){
-  ensureAzureProofState().currentSkill=skill;
+  const p=ensureAzureProofState();
+  p.currentSkill=skill;
+  state._domainUpdatedAt=state._domainUpdatedAt||{};
+  state._domainUpdatedAt.azure=new Date().toISOString();
   save(); render();
 }
 function setAzureProofStage(skill,stage){
@@ -5792,6 +5917,8 @@ function setAzureProofStage(skill,stage){
   rec.stage=azureProofStageLabel(stage);
   rec.lastProofAt=new Date().toISOString();
   ensureAzureProofState().lastProofAt=rec.lastProofAt;
+  state._domainUpdatedAt=state._domainUpdatedAt||{};
+  state._domainUpdatedAt.azure=rec.lastProofAt;
   // Keep older skill tracker loosely synced upward without forcing Resume Ready too early.
   syncAzureSkillStatusFromProof(skill,rec.stage);
   save(); render();
@@ -5803,6 +5930,8 @@ function logAzureProof(type='proof'){
   const skill=p.currentSkill || progress.nextSkill?.skill || Object.keys(state.azure.skills||{})[0] || 'Azure proof';
   const rec=azureSkillProofRecord(skill);
   const now=new Date().toISOString();
+  state._domainUpdatedAt=state._domainUpdatedAt||{};
+  state._domainUpdatedAt.azure=now;
   const previousStage=azureProofStageLabel(rec.stage||azureProofStageFromSkillStatus(state.azure.skills?.[skill]));
   const targetStage=azureProofStageForType(type);
   const entry={id:'azp_'+Date.now(),date:todayKey(),skill,type,stage:previousStage,at:now,period:currentGuidePeriod().key,label:azureProofTypeLabel(type)};
@@ -5845,6 +5974,8 @@ function setAzureExplainConfidence(skill,val){
   const rec=azureSkillProofRecord(skill);
   rec.explainConfidence=Number(val)||0;
   rec.lastProofAt=new Date().toISOString();
+  state._domainUpdatedAt=state._domainUpdatedAt||{};
+  state._domainUpdatedAt.azure=rec.lastProofAt;
   if(rec.explainConfidence>=7 && azureProofStageIndex(rec.stage)<5) rec.stage='Explained from memory';
   syncAzureSkillStatusFromProof(skill,rec.stage);
   save(); render();
@@ -5853,6 +5984,8 @@ function setAzureProofText(skill,key,val){
   const rec=azureSkillProofRecord(skill);
   rec[key]=val;
   rec.lastProofAt=new Date().toISOString();
+  state._domainUpdatedAt=state._domainUpdatedAt||{};
+  state._domainUpdatedAt.azure=rec.lastProofAt;
   if(key==='resumeBullet' && String(val||'').trim() && azureProofStageIndex(rec.stage)<6) rec.stage='Resume bullet ready';
   syncAzureSkillStatusFromProof(skill,rec.stage);
   save(); render();
@@ -5861,13 +5994,15 @@ function addAzureWeakTopic(topic=''){
   topic=String(topic||'').trim();
   if(!topic) return;
   const p=ensureAzureProofState();
-  p.weakTopics.push({topic,addedAt:new Date().toISOString(),status:'open'});
+  const now=new Date().toISOString();
+  p.weakTopics.push({topic,addedAt:now,status:'open'});
+  state._domainUpdatedAt=state._domainUpdatedAt||{}; state._domainUpdatedAt.azure=now;
   p.weakTopics=p.weakTopics.slice(-50);
   save(); render();
 }
 function closeAzureWeakTopic(idx){
   const p=ensureAzureProofState();
-  if(p.weakTopics[idx]) p.weakTopics[idx].status='closed';
+  if(p.weakTopics[idx]){ const now=new Date().toISOString(); p.weakTopics[idx].status='closed'; p.weakTopics[idx].closedAt=now; state._domainUpdatedAt=state._domainUpdatedAt||{}; state._domainUpdatedAt.azure=now; }
   save(); render();
 }
 function azureProofRecommendation(ctx=null){
