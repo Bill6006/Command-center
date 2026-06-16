@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center v282 perf3</title>
+<title>Tyree Life Command Center v287 anti-rollback</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -335,6 +335,7 @@ let todayKeyCacheKey='';
 let todayKeyCacheValue='';
 let guidePeriodCacheKey='';
 let guidePeriodCacheValue=null;
+let allowIntentionalRollbackWrite=false;
 function renderCacheGet(key,fn){
   try{
     const c=window.__tlccRenderCache;
@@ -1029,21 +1030,30 @@ function mergeCriticalRecoveryIntoState(s){
     criticalRawCandidates().forEach(raw=>{
       let c=null; try{c=JSON.parse(raw);}catch(e){}
       if(!c || !c.days) return;
+      const recoveryContentStamp=Math.max(stateAntiRollbackStamp(c), stampFromIso(c._inputUpdatedAt));
+      const baseContentStamp=stateAntiRollbackStamp(s);
+      // Anti-rollback: a freshly written recovery/vault copy with old content must not lower the app.
+      if(baseContentStamp && recoveryContentStamp && recoveryContentStamp<baseContentStamp) {
+        // Still allow individual newer day records below, but never overwrite settings/global state wholesale.
+      }
       s.days=s.days||{};
       Object.entries(c.days).forEach(([k,d])=>{
         if(!d) return;
         const incoming=migrateDay(deepClone(d));
         const existing=s.days[k];
-        if(!existing || daySaveStamp(incoming)>daySaveStamp(existing)) s.days[k]=incoming;
+        if(!existing || dayContentStamp(incoming)>dayContentStamp(existing)) s.days[k]=incoming;
       });
       if(c.adaya){
         const incomingAdaya=migrate({adaya:deepClone(c.adaya),days:{},azure:{skills:{},claims:{}}}).adaya;
-        const incomingStamp=Math.max(adayaSaveStamp(incomingAdaya),stampFromIso(c._inputUpdatedAt),stampFromIso(c._savedAt));
-        const existingStamp=Math.max(adayaSaveStamp(s.adaya),stampFromIso(s._inputUpdatedAt),stampFromIso(s._savedAt));
-        if(incomingStamp>=existingStamp || !s.adaya || !s.adaya.skills){s.adaya=incomingAdaya;}
+        const incomingStamp=Math.max(adayaSaveStamp(incomingAdaya),stampFromIso(c._inputUpdatedAt));
+        const existingStamp=Math.max(adayaSaveStamp(s.adaya),stateInputUpdatedStamp(s));
+        if(incomingStamp>existingStamp || !s.adaya || !s.adaya.skills){s.adaya=incomingAdaya;}
       }
       if(stampFromIso(c._inputUpdatedAt)>stampFromIso(s._inputUpdatedAt)) s._inputUpdatedAt=c._inputUpdatedAt;
-      if(c.settings){s.settings=Object.assign({},s.settings||{},c.settings);}
+      if(c.settings){
+        s.settings=mergeGuideCompletionSettings(s.settings||{}, c.settings||{});
+        try{sanitizeGuideStateAfterCompletion(s.settings);}catch(e){}
+      }
     });
   }catch(e){}
   return s;
@@ -1087,20 +1097,24 @@ function mergeAdayaRecoveryIntoState(s){
       let c=null; try{c=JSON.parse(raw);}catch(e){}
       if(!c || !c.adaya) return;
       const incomingAdaya=migrate({adaya:deepClone(c.adaya),days:{},azure:{skills:{},claims:{}}}).adaya;
-      const incomingStamp=Math.max(adayaSaveStamp(incomingAdaya),stampFromIso(c._inputUpdatedAt),stampFromIso(c._savedAt));
-      const existingStamp=Math.max(adayaSaveStamp(s.adaya),stampFromIso(s._inputUpdatedAt),stampFromIso(s._savedAt));
+      const incomingStamp=Math.max(adayaSaveStamp(incomingAdaya),stampFromIso(c._inputUpdatedAt));
+      const existingStamp=Math.max(adayaSaveStamp(s.adaya),stateInputUpdatedStamp(s));
       const existingSkillCount=Object.values(s.adaya?.skills||{}).filter(v=>normalizeAdayaStage(v)!=='Not Introduced').length;
       const incomingSkillCount=Object.values(incomingAdaya?.skills||{}).filter(v=>normalizeAdayaStage(v)!=='Not Introduced').length;
-      if(incomingStamp>=existingStamp || incomingSkillCount>existingSkillCount || !s.adaya || !s.adaya.skills){
+      if(incomingStamp>existingStamp || (incomingStamp===existingStamp && incomingSkillCount>existingSkillCount) || !s.adaya || !s.adaya.skills){
         s.adaya=incomingAdaya;
       }
       if(c.father && c.todayKey){
         s.days=s.days||{};
         if(!s.days[c.todayKey]) s.days[c.todayKey]=defaultDay();
         s.days[c.todayKey]=migrateDay(s.days[c.todayKey]);
-        const existingFather=s.days[c.todayKey].father||{};
-        s.days[c.todayKey].father=Object.assign({}, existingFather, deepClone(c.father));
-        if(c.father.daily && Object.values(c.father.daily).some(Boolean)) s.days[c.todayKey].fatherCheck=true;
+        const existingDayStamp=dayContentStamp(s.days[c.todayKey]);
+        const incomingFatherStamp=Math.max(stampFromIso(c._inputUpdatedAt), incomingStamp);
+        if(!existingDayStamp || incomingFatherStamp>=existingDayStamp){
+          const existingFather=s.days[c.todayKey].father||{};
+          s.days[c.todayKey].father=Object.assign({}, existingFather, deepClone(c.father));
+          if(c.father.daily && Object.values(c.father.daily).some(Boolean)) s.days[c.todayKey].fatherCheck=true;
+        }
       }
       if(stampFromIso(c._inputUpdatedAt)>stampFromIso(s._inputUpdatedAt)) s._inputUpdatedAt=c._inputUpdatedAt;
     });
@@ -1143,8 +1157,13 @@ function restoreDayCachesIntoState(s){
   try{for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i); if(k&&k.startsWith(DAY_CACHE_PREFIX)) pushDay(k.slice(DAY_CACHE_PREFIX.length), sessionStorage.getItem(k));}}catch(e){}
   candidates.forEach(({key,d})=>{
     const existing=s.days[key];
-    if(!existing || daySaveStamp(d)>=daySaveStamp(existing)){
-      s.days[key]=migrateDay(deepClone(d));
+    const incoming=migrateDay(deepClone(d));
+    const inStamp=dayContentStamp(incoming);
+    const exStamp=dayContentStamp(existing);
+    // Anti-rollback: day caches are duplicate recovery data. Their fresh _savedAt must not beat
+    // an existing day with newer real input/timeline/range content.
+    if(!existing || (inStamp && inStamp>exStamp) || (!exStamp && inStamp)){
+      s.days[key]=incoming;
     }
   });
   return s;
@@ -1484,6 +1503,78 @@ function meaningfulStateStamp(s){
     return stamps.length?Math.max(...stamps):0;
   }catch(e){return 0;}
 }
+function stateInputUpdatedStamp(s){
+  try{
+    const stamps=[s?._inputUpdatedAt,s?._lastMeaningfulInputAt].map(stampFromIso).filter(Boolean);
+    Object.values(s?.days||{}).forEach(d=>{
+      stamps.push(stampFromIso(d?.inputUpdatedAt));
+      stamps.push(stampFromIso(d?._inputUpdatedAt));
+    });
+    return stamps.length?Math.max(...stamps):0;
+  }catch(e){return 0;}
+}
+function dayContentStamp(d){
+  try{
+    const t=meaningfulDayStamp(d);
+    if(t) return t;
+    // Legacy fallback only when a day has no meaningful input stamps at all.
+    const legacy=[d?.inputUpdatedAt,d?._inputUpdatedAt,d?.azureLoggedAt,d?.therapy?.resetLoggedAt,d?.therapy?.resetAt].map(stampFromIso).filter(Boolean);
+    return legacy.length?Math.max(...legacy):0;
+  }catch(e){return 0;}
+}
+function stateAntiRollbackStamp(s){
+  try{
+    const meaningful=meaningfulStateStamp(s);
+    if(meaningful) return meaningful;
+    const input=stateInputUpdatedStamp(s);
+    if(input) return input;
+    // Last-resort legacy fallback for very old backups with no input/domain/day stamps.
+    return 0;
+  }catch(e){return 0;}
+}
+function rawAntiRollbackStamp(raw){
+  try{return stateAntiRollbackStamp(JSON.parse(String(raw||'')));}catch(e){return 0;}
+}
+function stateSavedOnlyStamp(s){try{return Math.max(stampFromIso(s?._savedAt), stampFromIso(s?._lastSaveAt), stampFromIso(s?.settings?.autoBackupLastAt));}catch(e){return 0;}}
+function stateRankForNormalRecovery(s){
+  try{
+    const content=stateAntiRollbackStamp(s);
+    return content || stateSavedOnlyStamp(s);
+  }catch(e){return 0;}
+}
+function incomingWouldRollback(incoming,current){
+  try{
+    if(allowIntentionalRollbackWrite) return false;
+    if(!incoming || !current) return false;
+    const inContent=stateAntiRollbackStamp(incoming);
+    const curContent=stateAntiRollbackStamp(current);
+    const inInput=stateInputUpdatedStamp(incoming);
+    const curInput=stateInputUpdatedStamp(current);
+    if(curInput && inInput && inInput<curInput) return true;
+    if(curContent && inContent && inContent<curContent) return true;
+    return false;
+  }catch(e){return false;}
+}
+function mergeStatesWithoutRollback(current,incoming){
+  try{
+    current=migrate(current||{}); incoming=migrate(incoming||{});
+    return mergeStatesNewestWins(current,incoming);
+  }catch(e){return current||incoming;}
+}
+function guardRawAgainstRollbackForWrite(raw){
+  try{
+    if(allowIntentionalRollbackWrite) return String(raw||'{}');
+    const incoming=parseStateRaw(String(raw||'{}'));
+    let existingRaw=null;
+    try{existingRaw=localStorage.getItem(LS_KEY);}catch(e){}
+    const existing=existingRaw?parseStateRaw(existingRaw):null;
+    if(existing && incoming && incomingWouldRollback(incoming, existing)){
+      const merged=mergeStatesWithoutRollback(existing, incoming);
+      return JSON.stringify(stateForStorage(merged));
+    }
+  }catch(e){}
+  return String(raw||'{}');
+}
 function collectSharedRawCandidates(){
   const out=[]; const push=raw=>{if(raw&&String(raw).trim().startsWith('{'))out.push(String(raw));};
   try{push(localStorage.getItem(LS_KEY));}catch(e){}
@@ -1498,7 +1589,11 @@ function latestSharedSavedRaw(){
   if(!attempts.length) return null;
   const merged=mergeRawStateCandidates(attempts);
   if(merged) return merged;
-  attempts.sort((a,b)=>Math.max(rawSaveStamp(b),(()=>{try{return meaningfulStateStamp(JSON.parse(b))}catch(e){return 0}})())-Math.max(rawSaveStamp(a),(()=>{try{return meaningfulStateStamp(JSON.parse(a))}catch(e){return 0}})()));
+  attempts.sort((a,b)=>{
+    const br=rawAntiRollbackStamp(b)||rawSaveStamp(b);
+    const ar=rawAntiRollbackStamp(a)||rawSaveStamp(a);
+    return br-ar;
+  });
   return attempts[0]||null;
 }
 function parseStateRaw(raw){
@@ -1511,31 +1606,34 @@ function mergeStatesNewestWins(localState, savedState){
   merged.days=merged.days||{};
   Object.entries(savedState.days||{}).forEach(([k,sd])=>{
     const ld=merged.days[k];
-    if(!ld || meaningfulDayStamp(sd)>meaningfulDayStamp(ld)){
+    const ss=dayContentStamp(sd); const ls=dayContentStamp(ld);
+    if(!ld || (ss && ss>ls)){
       merged.days[k]=migrateDay(deepClone(sd));
     }
   });
   Object.entries(localState.days||{}).forEach(([k,ld])=>{
     const sd=savedState.days?.[k];
-    if(!sd || meaningfulDayStamp(ld)>=meaningfulDayStamp(sd)){
+    const ls=dayContentStamp(ld); const ss=dayContentStamp(sd);
+    if(!sd || !ss || ls>=ss){
       merged.days[k]=migrateDay(deepClone(ld));
     }
   });
-  const savedNewer=meaningfulStateStamp(savedState)>meaningfulStateStamp(localState);
+  const savedNewer=stateAntiRollbackStamp(savedState)>stateAntiRollbackStamp(localState);
   if(savedNewer){
-    const activeTab=merged.settings?.activeTab;
-    const guide=merged.settings?.guideState;
-    merged.settings=Object.assign({}, savedState.settings||{}, merged.settings||{});
-    if(activeTab) merged.settings.activeTab=activeTab;
-    if(guide) merged.settings.guideState=guide;
+    // Only fill missing/non-critical settings from a newer candidate. Existing settings are not
+    // allowed to be rolled backward by a stale tab/recovery object.
+    const localSettings=merged.settings||{};
+    const savedSettings=savedState.settings||{};
+    merged.settings=Object.assign({}, savedSettings, localSettings);
   }
   // Guide-completion flags live in settings rather than days, so preserve them by their own stamps.
-  // This prevents a newer Evening/Morning/Afternoon Done flag from being lost when saved-state
-  // candidates are merged after refresh/reload.
   merged.settings=mergeGuideCompletionSettings(mergeGuideCompletionSettings(merged.settings||{}, localState.settings||{}), savedState.settings||{});
   try{sanitizeGuideStateAfterCompletion(merged.settings);}catch(e){}
   mergeGlobalCanonicalDomains(merged, localState, savedState);
-  if(stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
+  const savedInput=stateInputUpdatedStamp(savedState);
+  const localInput=stateInputUpdatedStamp(localState);
+  if(savedInput>localInput && stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
+  if(localInput>=savedInput && localState._inputUpdatedAt) merged._inputUpdatedAt=localState._inputUpdatedAt;
   return migrate(merged);
 }
 function mergeLatestSharedStateIfNewer(doRender=false){
@@ -1543,8 +1641,14 @@ function mergeLatestSharedStateIfNewer(doRender=false){
     const raw=latestSharedSavedRaw();
     const saved=parseStateRaw(raw);
     if(!saved) return false;
-    if(meaningfulStateStamp(saved)>meaningfulStateStamp(state)){
+    if(incomingWouldRollback(saved,state)) return false;
+    if(stateAntiRollbackStamp(saved)>stateAntiRollbackStamp(state)){
+      const beforeInput=stateInputUpdatedStamp(state);
       state=mergeStatesNewestWins(state,saved);
+      if(stateInputUpdatedStamp(state)<beforeInput){
+        state._inputUpdatedAt=lastInputUpdatedAt||state._inputUpdatedAt;
+      }
+      inputUpdatedStampCacheReady=false;
       if(doRender) render();
       return true;
     }
@@ -1565,7 +1669,9 @@ function mergeRawStateCandidates(attempts){
       }catch(e){}
     });
     if(!states.length) return null;
-    states.sort((a,b)=>Math.max(rawSaveStamp(JSON.stringify(a)),meaningfulStateStamp(a))-Math.max(rawSaveStamp(JSON.stringify(b)),meaningfulStateStamp(b)));
+    // Normal startup/recovery must rank by real content/input/domain/day stamps, not by a fresh _savedAt
+    // stamped onto stale session/window/recovery copies.
+    states.sort((a,b)=>stateRankForNormalRecovery(a)-stateRankForNormalRecovery(b));
     let merged=states[0];
     for(let i=1;i<states.length;i++){
       merged=mergeStatesNewestWins(merged, states[i]);
@@ -1579,7 +1685,11 @@ function readSavedRaw(){
   if(!attempts.length) return null;
   const merged=mergeRawStateCandidates(attempts);
   if(merged) return merged;
-  attempts.sort((a,b)=>rawSaveStamp(b)-rawSaveStamp(a));
+  attempts.sort((a,b)=>{
+    const br=rawAntiRollbackStamp(b)||rawSaveStamp(b);
+    const ar=rawAntiRollbackStamp(a)||rawSaveStamp(a);
+    return br-ar;
+  });
   return attempts[0] || null;
 }
 function idbOpen(){
@@ -1600,9 +1710,10 @@ async function idbGetRaw(){
 async function hydrateFromIndexedDB(){
   const raw=await idbGetRaw();
   if(!raw) return;
-  const current=JSON.stringify(state);
-  if(rawSaveStamp(raw)>rawSaveStamp(current) || meaningfulStateStamp(parseStateRaw(raw)||{})>meaningfulStateStamp(state)){
-    try{state=mergeStatesNewestWins(state, parseStateRaw(raw)); writeSavedState(); render();}
+  const incoming=parseStateRaw(raw);
+  if(!incoming || incomingWouldRollback(incoming,state)) return;
+  if(stateAntiRollbackStamp(incoming)>stateAntiRollbackStamp(state)){
+    try{state=mergeStatesNewestWins(state, incoming); inputUpdatedStampCacheReady=false; writeSavedState(); render();}
     catch(e){}
   }
 }
@@ -1640,7 +1751,7 @@ function flushSecondaryStorageWrites(){
   }catch(e){}
 }
 function writeCompactSavedRaw(compactRaw){
-  compactRaw=String(compactRaw||'{}');
+  compactRaw=guardRawAgainstRollbackForWrite(String(compactRaw||'{}'));
   // Keep the durable primary save immediate, but defer duplicate backups/caches.
   try{localStorage.setItem(LS_KEY, compactRaw);}catch(e){}
   const recoveryNow=needsImmediateTabRecoveryWrite();
@@ -1963,7 +2074,7 @@ function prepStateForSave(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v286-global-speed-guide-state-fix';
+  state._schemaVersion='v287-anti-rollback-fix';
   try{markExpiredForecastActions();}catch(e){}
   try{
     const nowMs=Date.now();
@@ -1990,7 +2101,7 @@ function save(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v286-global-speed-guide-state-fix';
+  state._schemaVersion='v287-anti-rollback-fix';
   try{
     const k=todayKey();
     if(state.days?.[k]){
@@ -13021,11 +13132,31 @@ function showBackupBox(raw){
   const box=document.getElementById('backupJsonBox');
   if(box){box.value=raw; box.classList.remove('hidden'); box.focus(); box.select();}
 }
+function applyImportedStateObject(obj){
+  try{
+    if(obj&&obj._export) delete obj._export;
+    allowIntentionalRollbackWrite=true;
+    state=migrate(obj);
+    renderFullMigrateLastAt=Date.now();
+    inputUpdatedStampCacheReady=false;
+    active=state.settings?.activeTab||'today';
+    state.settings=state.settings||{};
+    sanitizeGuideStateAfterCompletion(state.settings);
+    guideState=state.settings?.guideState||null;
+    save(true);
+    flushPendingSaveNow('import');
+    flushSecondaryStorageWrites();
+    render();
+    return true;
+  }finally{
+    allowIntentionalRollbackWrite=false;
+  }
+}
 function importBackupText(){
   const box=document.getElementById('backupJsonBox');
   const raw=(box&&box.value?box.value:'').trim();
   if(!raw){alert('Paste backup JSON in the box first.'); return;}
-  try{let obj=JSON.parse(raw); if(obj&&obj._export) delete obj._export; state=mergeStatesNewestWins(state,migrate(obj)); active=state.settings?.activeTab||'today'; state.settings=state.settings||{}; sanitizeGuideStateAfterCompletion(state.settings); guideState=state.settings?.guideState||null; save(true); render(); alert('Backup merged/restored.');}
+  try{let obj=JSON.parse(raw); applyImportedStateObject(obj); alert('Backup restored.');}
   catch(err){alert('Invalid backup JSON.');}
 }
 
@@ -13963,7 +14094,7 @@ function buildFullBackupExport(){
   return backup;
 }
 function exportData(){downloadBackupNow('manual')}
-function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj); renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; active=state.settings?.activeTab||'today';state.settings=state.settings||{}; sanitizeGuideStateAfterCompletion(state.settings); guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
+function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); applyImportedStateObject(obj);}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
 function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); navTabsBuilt=false; renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; render(); alert('App data reset.')}}
 function toggleTheme(){state.theme='dark'; state.settings=state.settings||{}; state.settings.themeLocked='dark'; save(); render()}
 function saveOnExit(){try{commitFocusedField(); commitPendingRangeDrafts('exit',{save:false}); save(true); flushPendingSaveNow('exit'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedState(); flushSecondaryStorageWrites();}catch(err){}}}
