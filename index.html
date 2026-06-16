@@ -328,6 +328,13 @@ let inputUpdatedStampCache=0;
 let inputUpdatedStampCacheReady=false;
 let renderFullMigrateLastAt=0;
 let navTabsBuilt=false;
+let storageWorksCache=null;
+let storageWorksCacheAt=0;
+let zoneFormatterCache={};
+let todayKeyCacheKey='';
+let todayKeyCacheValue='';
+let guidePeriodCacheKey='';
+let guidePeriodCacheValue=null;
 function renderCacheGet(key,fn){
   try{
     const c=window.__tlccRenderCache;
@@ -589,7 +596,7 @@ let state; let active; let guideState;
 try{state=loadState();}catch(e){try{console.error('TLCC boot loadState failed',e)}catch(_){ } state={seed:SEED, theme:'dark', settings:{timeZone:APP_TIME_ZONE,timeZoneLabel:APP_TIME_ZONE_LABEL,activeTab:'today',dayRolloverMode:'after_sleep_4am'}, azure:{skills:{},claims:{}}, learning:defaultLearningState(), money:deepClone(SEED.money), days:{}, weeklyAnchors:deepClone(SEED.weeklyAnchors), logs:[], adaya:{skills:{},customSkills:[],weekly:{}}}; try{SEED.azureSkills.forEach(k=>state.azure.skills[k]='Not Started'); SEED.resumeClaims.forEach(c=>state.azure.claims[c.claim]=c.status); state=migrate(state);}catch(_){}}
 try{active = state?.settings?.activeTab || safeLocalGet('tlcc_active') || 'today';}catch(e){active='today';}
 try{if(!tabs.some(([id])=>id===active)) active='today';}catch(e){active='today';}
-try{guideState = state?.settings?.guideState || null;}catch(e){guideState=null;}
+try{state.settings=state.settings||{}; sanitizeGuideStateAfterCompletion(state.settings); guideState = state?.settings?.guideState || null;}catch(e){guideState=null;}
 let domainHashCache={};
 try{domainHashCache=computeDomainHashes(state);}catch(e){domainHashCache={};}
 function deepClone(o){return JSON.parse(JSON.stringify(o))}
@@ -612,11 +619,29 @@ function isAndroidLocalHtmlMode(){
   try{return isLocalAppMode() && /Android/i.test(navigator.userAgent||'');}catch(e){return isLocalAppMode();}
 }
 function needsImmediateTabRecoveryWrite(){
-  try{return isLocalAppMode() || !browserStorageWorks();}catch(e){return true;}
+  try{
+    if(isLocalAppMode()) return true;
+    const now=Date.now();
+    if(storageWorksCache!==null && now-storageWorksCacheAt<60000) return !storageWorksCache;
+    storageWorksCache=browserStorageWorks();
+    storageWorksCacheAt=now;
+    return !storageWorksCache;
+  }catch(e){return true;}
 }
 function partsInZone(dt=new Date(), timeZone=APP_TIME_ZONE){
-  const parts = new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'}).formatToParts(dt);
-  return Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  try{
+    const tz=timeZone||APP_TIME_ZONE;
+    let fmt=zoneFormatterCache[tz];
+    if(!fmt){
+      fmt=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'});
+      zoneFormatterCache[tz]=fmt;
+    }
+    const parts = fmt.formatToParts(dt);
+    return Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  }catch(e){
+    const parts = new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZoneName:'short'}).formatToParts(dt);
+    return Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  }
 }
 function localDateKey(dt=new Date()){
   const p=partsInZone(dt);
@@ -646,14 +671,22 @@ function dayRolloverMode(){
 }
 function todayKey(dt=new Date()){
   const mode=dayRolloverMode();
-  if(mode==='midnight') return localDateKey(dt);
-  if(mode==='manual_start_morning'){
-    try{return state?.settings?.manualDayKey || localDateKey(dt)}catch(e){return localDateKey(dt)}
+  const dateObj=(dt instanceof Date)?dt:new Date(dt);
+  const manualKey=mode==='manual_start_morning'?(state?.settings?.manualDayKey||''):'';
+  const bucket=Math.floor((dateObj.getTime?dateObj.getTime():Date.now())/60000);
+  const cacheKey=mode+'|'+manualKey+'|'+bucket;
+  if(todayKeyCacheKey===cacheKey && todayKeyCacheValue) return todayKeyCacheValue;
+  let result;
+  if(mode==='midnight') result=localDateKey(dateObj);
+  else if(mode==='manual_start_morning'){
+    try{result=state?.settings?.manualDayKey || localDateKey(dateObj)}catch(e){result=localDateKey(dateObj)}
+  }else{
+    // Sleep-day rollover: after midnight but before 4 AM still belongs to the previous night.
+    const h=localHourInAppZone(dateObj);
+    result=(h>=0 && h<4) ? localDateKey(new Date(dateObj.getTime()-24*60*60*1000)) : localDateKey(dateObj);
   }
-  // Sleep-day rollover: after midnight but before 4 AM still belongs to the previous night.
-  const h=localHourInAppZone(dt);
-  if(h>=0 && h<4) return localDateKey(new Date(dt.getTime()-24*60*60*1000));
-  return localDateKey(dt);
+  todayKeyCacheKey=cacheKey; todayKeyCacheValue=result;
+  return result;
 }
 function todayLabel(dt=new Date(), opts={weekday:'short',month:'short',day:'numeric'}){return dateFromKey(todayKey(dt)).toLocaleDateString(undefined,{timeZone:APP_TIME_ZONE,...opts})}
 function isUsingPreviousSleepDay(dt=new Date()){return dayRolloverMode()==='after_sleep_4am' && localHourInAppZone(dt)<4}
@@ -709,7 +742,7 @@ function markAutoBackupDue(reason='due'){
     state.settings=state.settings||{};
     state.settings.autoBackupDueAt=state.settings.autoBackupDueAt||new Date().toISOString();
     state.settings.autoBackupDueReason=reason;
-    writeSavedRaw(JSON.stringify(state));
+    writeSavedState();
   }catch(e){}
 }
 function setAutoBackupDownloads(v){
@@ -775,7 +808,7 @@ function maybeAutoBackupDownload(userGesture=false){
     state.settings.autoBackupPromptCooldownUntil=new Date(now+autoBackupIntervalMs()).toISOString();
     state.settings.autoBackupDueAt=null;
     state.settings.autoBackupDueReason=null;
-    writeSavedRaw(JSON.stringify(state));
+    writeSavedState();
     downloadBackupNow('auto');
   }catch(e){
     try{
@@ -783,7 +816,7 @@ function maybeAutoBackupDownload(userGesture=false){
       state.settings.autoBackupPromptCooldownUntil=new Date(Date.now()+autoBackupIntervalMs()).toISOString();
       state.settings.autoBackupDueAt=null;
       state.settings.autoBackupDueReason=null;
-      writeSavedRaw(JSON.stringify(state));
+      writeSavedState();
     }catch(err){}
   }
 }
@@ -811,7 +844,7 @@ async function downloadBackupNow(source='manual'){
     state.settings.autoBackupDueAt=null;
     state.settings.autoBackupDueReason=null;
     if(!isManual) state.settings.autoBackupPromptCooldownUntil=new Date(now.getTime()+autoBackupIntervalMs()).toISOString();
-    writeSavedRaw(JSON.stringify(state));
+    writeSavedState();
     setExportProgress(92,'Starting download...');
     await exportSleep(25);
     downloadTextFile(raw,name,'application/json');
@@ -825,9 +858,9 @@ async function downloadBackupNow(source='manual'){
   }
 }
 function stateForStorage(rawState){
-  const copy=deepClone(rawState||{});
-  // The SEED data is already built into the HTML file. Keeping it out of saved state makes
-  // the Android URL fallback much smaller and more reliable.
+  // The SEED data is already built into the HTML file. Keep the saved state compact.
+  // Shallow copy is enough because only the top-level seed key is removed; nested data is not mutated.
+  const copy=Object.assign({}, rawState||{});
   delete copy.seed;
   return copy;
 }
@@ -1378,6 +1411,68 @@ function mergeGuideCompletionSettings(targetSettings, sourceSettings){
   }catch(e){}
   return out;
 }
+function guideCompletionKeys(period){
+  const p=String(period||'').toLowerCase();
+  const map={morning:['lastMorningGuideCompletedDay','lastMorningGuideCompletedAt'],afternoon:['lastAfternoonGuideCompletedDay','lastAfternoonGuideCompletedAt'],evening:['lastEveningGuideCompletedDay','lastEveningGuideCompletedAt']};
+  return map[p]||null;
+}
+function guideStatePeriodForCompletion(guide){
+  try{
+    if(!guide) return '';
+    const p=String(guide.period||'').toLowerCase();
+    if(p==='smart') return String(guide.sourcePeriod||'').toLowerCase();
+    return p;
+  }catch(e){return '';}
+}
+function guideStateTimeStamp(guide){
+  try{return Math.max(stampFromIso(guide?.updatedAt), stampFromIso(guide?.startedAt), stampFromIso(guide?.createdAt));}catch(e){return 0;}
+}
+function guideCompletionStampForPeriod(settings, period){
+  try{
+    const keys=guideCompletionKeys(period);
+    if(!keys) return 0;
+    const s=settings||{};
+    return Math.max(stampFromIso(s[keys[1]]), dateKeyMiddayStamp(s[keys[0]]));
+  }catch(e){return 0;}
+}
+function shouldDiscardGuideStateAfterCompletion(settings, guide){
+  try{
+    if(!guide) return false;
+    const p=guideStatePeriodForCompletion(guide);
+    const keys=guideCompletionKeys(p);
+    if(!keys) return false;
+    const s=settings||{};
+    const completedDay=s[keys[0]];
+    const completedStamp=guideCompletionStampForPeriod(s,p);
+    if(!completedDay && !completedStamp) return false;
+    const today=todayKey();
+    const guideStamp=guideStateTimeStamp(guide);
+    // If this period is already completed today, an older/incomplete guide snapshot
+    // must not be restored from session/backup/recovery after refresh.
+    if(completedDay===today){
+      return !guideStamp || !completedStamp || completedStamp>=guideStamp;
+    }
+    return !!(completedStamp && guideStamp && completedStamp>=guideStamp);
+  }catch(e){return false;}
+}
+function sanitizeGuideStateAfterCompletion(settings){
+  try{
+    if(!settings || !settings.guideState) return settings;
+    if(shouldDiscardGuideStateAfterCompletion(settings, settings.guideState)){
+      settings.guideState=null;
+    }
+  }catch(e){}
+  return settings;
+}
+function syncGuideStateToSettings(){
+  state.settings=state.settings||{};
+  try{
+    if(shouldDiscardGuideStateAfterCompletion(state.settings, guideState)) guideState=null;
+  }catch(e){}
+  state.settings.guideState=guideState?deepClone(guideState):null;
+  sanitizeGuideStateAfterCompletion(state.settings);
+  if(!state.settings.guideState) guideState=null;
+}
 function meaningfulStateStamp(s){
   try{
     const stamps=[s?._inputUpdatedAt,s?._lastMeaningfulInputAt].map(stampFromIso).filter(Boolean);
@@ -1438,6 +1533,7 @@ function mergeStatesNewestWins(localState, savedState){
   // This prevents a newer Evening/Morning/Afternoon Done flag from being lost when saved-state
   // candidates are merged after refresh/reload.
   merged.settings=mergeGuideCompletionSettings(mergeGuideCompletionSettings(merged.settings||{}, localState.settings||{}), savedState.settings||{});
+  try{sanitizeGuideStateAfterCompletion(merged.settings);}catch(e){}
   mergeGlobalCanonicalDomains(merged, localState, savedState);
   if(stampFromIso(savedState._inputUpdatedAt)>stampFromIso(merged._inputUpdatedAt)) merged._inputUpdatedAt=savedState._inputUpdatedAt;
   return migrate(merged);
@@ -1506,7 +1602,7 @@ async function hydrateFromIndexedDB(){
   if(!raw) return;
   const current=JSON.stringify(state);
   if(rawSaveStamp(raw)>rawSaveStamp(current) || meaningfulStateStamp(parseStateRaw(raw)||{})>meaningfulStateStamp(state)){
-    try{state=mergeStatesNewestWins(state, parseStateRaw(raw)); writeSavedRaw(JSON.stringify(state)); render();}
+    try{state=mergeStatesNewestWins(state, parseStateRaw(raw)); writeSavedState(); render();}
     catch(e){}
   }
 }
@@ -1543,25 +1639,34 @@ function flushSecondaryStorageWrites(){
     try{idbPutRaw(raw);}catch(e){}
   }catch(e){}
 }
-function writeSavedRaw(raw){
-  let compactRaw=raw;
-  try{compactRaw=JSON.stringify(stateForStorage(JSON.parse(raw)));}catch(e){}
-
-  // Performance bug-fix: keep the durable primary save immediate, but defer duplicate backups/caches.
-  // Multiple localStorage/sessionStorage writes of the whole app state were blocking Android Chrome.
+function writeCompactSavedRaw(compactRaw){
+  compactRaw=String(compactRaw||'{}');
+  // Keep the durable primary save immediate, but defer duplicate backups/caches.
   try{localStorage.setItem(LS_KEY, compactRaw);}catch(e){}
-
-  if(needsImmediateTabRecoveryWrite()){
+  const recoveryNow=needsImmediateTabRecoveryWrite();
+  if(recoveryNow){
     // Local content:// / blocked storage still needs immediate tab recovery. Hosted HTTPS does not.
     try{writeImmediateTabRecovery(compactRaw);}catch(e){}
   }
-
   scheduleSecondaryStorageWrites(compactRaw, isLocalAppMode()?200:900);
   lastSaveAt = new Date().toISOString();
   updateSaveStatus();
-
-  // Slow path: URL hash/window recovery is useful in local file mode, but expensive.
-  if(needsImmediateTabRecoveryWrite()) scheduleDeferredRecoveryWrites(compactRaw);
+  if(recoveryNow) scheduleDeferredRecoveryWrites(compactRaw);
+}
+function writeSavedState(){
+  // Speed fix: primary saves no longer stringify -> parse -> clone -> stringify.
+  // The canonical state is written directly in compact form.
+  try{writeCompactSavedRaw(JSON.stringify(stateForStorage(state)));}
+  catch(e){try{writeCompactSavedRaw(JSON.stringify(state||{}));}catch(err){}}
+}
+function writeSavedRaw(raw){
+  let compactRaw=String(raw||'{}');
+  try{
+    if(compactRaw.indexOf('"seed"')!==-1){
+      compactRaw=JSON.stringify(stateForStorage(JSON.parse(compactRaw)));
+    }
+  }catch(e){}
+  writeCompactSavedRaw(compactRaw);
 }
 function clearSavedRaw(){
   try{localStorage.removeItem(LS_KEY); localStorage.removeItem(STATE_BACKUP_KEY); localStorage.removeItem(STATE_LAST_GOOD_KEY); localStorage.removeItem(STATE_CRITICAL_KEY); localStorage.removeItem(STATE_CRITICAL_KEY+'_last_good'); localStorage.removeItem(ADAYA_RECOVERY_KEY); localStorage.removeItem(ADAYA_RECOVERY_KEY+'_last_good'); localStorage.removeItem('tlcc_active');}catch(e){}
@@ -1633,6 +1738,7 @@ function migrate(s){
   { const oldNameKey='Safety / Life Skills|knowing her name'; const newNameKey='Safety / Life Skills|name + safe adult'; if(s.adaya.skills[oldNameKey] && !s.adaya.skills[newNameKey]) s.adaya.skills[newNameKey]=s.adaya.skills[oldNameKey]; }
   Object.entries(ADAYA_CATEGORIES).forEach(([cat,skills])=>skills.forEach(skill=>{const key=cat+'|'+skill; if(!s.adaya.skills[key]) s.adaya.skills[key]='Not Introduced'}));
   if(s.days){Object.values(s.days).forEach(d=>migrateDay(d)); normalizeDayKeysToLocal(s)}
+  try{sanitizeGuideStateAfterCompletion(s.settings);}catch(e){}
   return s;
 }
 function migrateDay(d){
@@ -1704,7 +1810,6 @@ function snapshotGlobalState(){
     azure:{
       skills:deepClone(azureSkills),
       claims:deepClone(azureClaims),
-      proof:deepClone(state.azure?.proof||{}),
       skillStageCounts:Object.values(azureSkills).reduce((a,v)=>{a[v]=(a[v]||0)+1;return a},{}),
       claimStatusCounts:Object.values(azureClaims).reduce((a,v)=>{a[v]=(a[v]||0)+1;return a},{})
     },
@@ -1854,11 +1959,11 @@ function prepStateForSave(skipSnapshot=false){
   try{repairGlobalCanonicalStateForSave(state,{touchChanged:true});}catch(e){}
   state.settings=state.settings||{};
   state.settings.activeTab=active||'today';
-  state.settings.guideState=guideState?deepClone(guideState):null;
+  syncGuideStateToSettings();
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v281-render-interaction-performance-bugfix';
+  state._schemaVersion='v286-global-speed-guide-state-fix';
   try{markExpiredForecastActions();}catch(e){}
   try{
     const nowMs=Date.now();
@@ -1875,18 +1980,17 @@ function prepStateForSave(skipSnapshot=false){
   }catch(e){}
 }
 function save(skipSnapshot=false){
-  // Global data-integrity fix: every committed input must be durable immediately.
-  // Fast drag paths stay DOM-only until final commit; final commits/buttons/checks now write the canonical state before refresh/export can race it.
+  // Integrity remains correctness-first: every committed input gets a durable primary save.
+  // Speed fix: avoid duplicate global repair here; flush/prep performs the canonical repair once.
   try{if(!committingPendingRangeDrafts) commitPendingRangeDrafts('save',{save:false});}catch(e){}
   try{maybeMarkInputUpdated();}catch(e){}
-  try{repairGlobalCanonicalStateForSave(state,{touchChanged:true});}catch(e){}
   state.settings=state.settings||{};
   state.settings.activeTab=active||'today';
-  state.settings.guideState=guideState?deepClone(guideState):null;
+  syncGuideStateToSettings();
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v284-data-integrity-canonical-input-bugfix';
+  state._schemaVersion='v286-global-speed-guide-state-fix';
   try{
     const k=todayKey();
     if(state.days?.[k]){
@@ -1896,7 +2000,6 @@ function save(skipSnapshot=false){
   }catch(e){}
   saveDirty=true;
   updateSaveStatus();
-  // Correctness-first: primary localStorage write happens now; duplicate backup/cache writes remain deferred in writeSavedRaw().
   flushPendingSaveNow('force');
 }
 function flushPendingSaveNow(reason='manual'){
@@ -1918,7 +2021,7 @@ function flushPendingSaveNow(reason='manual'){
         try{captureTodaySnapshot();}catch(e){}
       }
       prepStateForSave(true);
-      writeSavedRaw(JSON.stringify(state));
+      writeSavedState();
       saveDirty=false;
       scheduleAutoBackupDownload();
       return true;
@@ -1927,7 +2030,7 @@ function flushPendingSaveNow(reason='manual'){
     }
   }catch(e){
     try{saveFlushBusy=false;}catch(_){}
-    try{writeSavedRaw(JSON.stringify(state)); saveDirty=false;}catch(err){}
+    try{writeSavedState(); saveDirty=false;}catch(err){}
     return false;
   }
 }
@@ -1964,7 +2067,7 @@ function applyOneTimeDailyCarryFix(){
     const k=todayKey();
     if(state.settings.dailyCarryFixAppliedFor===k) return;
     state.settings.dailyCarryFixAppliedFor=k;
-    writeSavedRaw(JSON.stringify(state));
+    writeSavedState();
   }catch(e){}
 }
 function day(){
@@ -2193,14 +2296,15 @@ function renderGuideStatusBadges(){
     const s=guideStatusForPeriod(period);
     return `<span class="guideBadge ${s.cls}" title="${esc(s.title||'')}"><span class="guideLabel">${esc(s.label)}</span><span class="guideState">${esc(s.state)}</span></span>`;
   });
-  wrap.innerHTML=badges.join('');
+  const html=badges.join('');
+  if(wrap.dataset.renderedHtml!==html){wrap.innerHTML=html; wrap.dataset.renderedHtml=html;}
 
   // Keep the Weekly button out of the guide badge rail so it does not get cut off on mobile.
-  // It lives in the compact input/Quick Mode row instead.
   const slot=document.getElementById('weeklyGuideSlot');
   if(slot){
     const weekly=weeklyGuideBadgeStatus();
-    slot.innerHTML=weekly ? `<button type="button" class="guideBadge ${weekly.cls} weeklyGuideBadge" title="${esc(weekly.title||'')}" onclick="startWeeklyGuide()"><span class="guideLabel">Week</span><span class="guideState">${esc(weekly.state)}</span></button>` : '';
+    const wh=weekly ? `<button type="button" class="guideBadge ${weekly.cls} weeklyGuideBadge" title="${esc(weekly.title||'')}" onclick="startWeeklyGuide()"><span class="guideLabel">Week</span><span class="guideState">${esc(weekly.state)}</span></button>` : '';
+    if(slot.dataset.renderedHtml!==wh){slot.innerHTML=wh; slot.dataset.renderedHtml=wh;}
   }
 }
 
@@ -2247,9 +2351,9 @@ function setActiveTab(id){
   state.settings.activeTab=id;
   safeLocalSet('tlcc_active',id);
   updateActiveTabClasses();
-  // Persist the selected tab later; do not block the tap or the active-class paint.
-  try{save(true);}catch(e){}
   render();
+  // Persist the selected tab shortly after the UI paints. Pagehide/export still force-flushes first.
+  setTimeout(()=>{try{save(true);}catch(e){}},80);
 }
 function clearLinkedMasterSources(d,k){
   try{
@@ -2657,7 +2761,7 @@ function repairCanonicalRangeLogsForDay(d){
 }
 function markRangeLogged(key,value){
   try{commitRangeValueCanonical(key,value,{save:true,render:false});}
-  catch(e){try{writeSavedRaw(JSON.stringify(state))}catch(err){}}
+  catch(e){try{writeSavedState()}catch(err){}}
 }
 function undoRangeLogged(key){
   const d=day(); const k=String(key||'');
@@ -2914,10 +3018,15 @@ function renderNow(){
     const c=document.getElementById('content');
     if(c){
       if(state.settings?.quickMode){
-        try{c.innerHTML=renderQuickMode();}catch(qErr){console.error('TLCC quick render failed',qErr); c.innerHTML='<section class=\"section active\"><div class=\"card\"><h2>Quick Mode had a loading issue</h2><p class=\"tiny\">Turn Quick Mode off or import your latest backup.</p></div></section>'; }
+        try{const nextHtml=renderQuickMode(); if(c.dataset.activeSection!=='quick' || c.dataset.renderedHtml!==nextHtml){c.innerHTML=nextHtml; c.dataset.activeSection='quick'; c.dataset.renderedHtml=nextHtml;}}catch(qErr){console.error('TLCC quick render failed',qErr); c.innerHTML='<section class=\"section active\"><div class=\"card\"><h2>Quick Mode had a loading issue</h2><p class=\"tiny\">Turn Quick Mode off or import your latest backup.</p></div></section>'; }
       }else{
         try{
-          c.innerHTML=renderSection(active);
+          const nextHtml=renderSection(active);
+          if(c.dataset.activeSection!==String(active) || c.dataset.renderedHtml!==nextHtml){
+            c.innerHTML=nextHtml;
+            c.dataset.activeSection=String(active);
+            c.dataset.renderedHtml=nextHtml;
+          }
         }catch(secErr){
           console.error('TLCC active section failed: '+active,secErr);
           c.innerHTML=`<section class=\"section active\" id=\"sec-${active}\"><div class=\"card\"><h2>${esc(active)} section had a loading issue</h2><p class=\"tiny\">The rest of the app can still load. Export/import backup if needed.</p></div></section>`;
@@ -2935,11 +3044,15 @@ function renderNow(){
 
 function guidePeriodLabel(periodKey){return ({morning:'Morning',afternoon:'Afternoon',evening:'Evening',weekly:'Weekly',smart:'Smart Check-In'})[periodKey]||currentGuidePeriod().label}
 function currentGuidePeriod(){
-  const hRaw=Number(partsInZone(new Date()).hour);
+  const now=new Date();
+  const bucket=Math.floor(now.getTime()/60000);
+  const cacheKey=String(bucket);
+  if(guidePeriodCacheKey===cacheKey && guidePeriodCacheValue) return guidePeriodCacheValue;
+  const hRaw=Number(partsInZone(now).hour);
   const h=hRaw===24?0:hRaw;
-  if(h>=5 && h<12) return {key:'morning',label:'Morning'};
-  if(h>=12 && h<17) return {key:'afternoon',label:'Afternoon'};
-  return {key:'evening',label:'Evening'};
+  const result=(h>=5 && h<12) ? {key:'morning',label:'Morning'} : (h>=12 && h<17) ? {key:'afternoon',label:'Afternoon'} : {key:'evening',label:'Evening'};
+  guidePeriodCacheKey=cacheKey; guidePeriodCacheValue=result;
+  return result;
 }
 
 function missedMorningGuideAvailable(){
@@ -3511,9 +3624,10 @@ function guideSteps(periodKey){
 }
 function persistGuideState(){
   state.settings=state.settings||{};
-  state.settings.guideState=guideState?deepClone(guideState):null;
+  try{if(guideState) guideState.updatedAt=new Date().toISOString();}catch(e){}
   state.settings.activeTab=active||'today';
-  try{save(true);}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
+  syncGuideStateToSettings();
+  try{save(true);}catch(e){try{writeSavedState();}catch(err){}}
 }
 function resetGuideOnTimeframeChange(){
   state.settings=state.settings||{};
@@ -3598,26 +3712,47 @@ function stopGuide(){
   nav();
 }
 function completeGuide(){
-  const donePeriod=guideState?.period;
+  const finishedGuide=guideState?deepClone(guideState):null;
+  const donePeriod=finishedGuide?.period;
   const completedAt=new Date().toISOString();
-  if(donePeriod==='weekly'){migrate(state); state.adaya.weekly=state.adaya.weekly||{}; state.adaya.weekly.lastGuideCompletedWeek=weekStartKey(todayKey()); state.adaya.weekly.lastGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='morning'){state.settings=state.settings||{}; state.settings.lastMorningGuideCompletedDay=todayKey(); state.settings.lastMorningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='afternoon'){state.settings=state.settings||{}; state.settings.lastAfternoonGuideCompletedDay=todayKey(); state.settings.lastAfternoonGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='evening'){state.settings=state.settings||{}; state.settings.lastEveningGuideCompletedDay=todayKey(); state.settings.lastEveningGuideCompletedAt=completedAt; save(true);}   if(donePeriod==='smart'){state.settings=state.settings||{}; state.settings.lastSmartCheckInCompletedAt=completedAt; state.settings.lastSmartCheckInCompletedSourcePeriod=guideState?.sourcePeriod||currentGuidePeriod().key; save(true);}
-  guideState=null;
   state.settings=state.settings||{};
-  state.settings.guideState=null;
-  try{markInputUpdated(completedAt);}catch(e){}
-  // Save once more after clearing guideState so the durable state has the completed badge
-  // and does not rely on an in-progress guide snapshot.
-  try{save(true); flushPendingSaveNow('guide-complete');}catch(e){try{writeSavedRaw(JSON.stringify(state));}catch(err){}}
-  persistGuideState();
-  const box=document.getElementById('guideControls');
-  if(box){
-    box.className='guideControls show';
-    box.innerHTML=`<div class="guideTitle">Guide complete ✓</div><div class="guideNote">${donePeriod==='weekly'?'Weekly father review is saved.':donePeriod==='smart'?'Smart Check-In covered the highest-value open items.':donePeriod==='evening'?'Night data is saved for tomorrow.':'Your check-in is saved.'}</div><div class="chips" style="margin-top:8px"><button class="btn small primary" onclick="stopGuide()">Close</button></div>`;
+  if(donePeriod==='weekly'){
+    migrate(state);
+    state.adaya.weekly=state.adaya.weekly||{};
+    state.adaya.weekly.lastGuideCompletedWeek=weekStartKey(todayKey());
+    state.adaya.weekly.lastGuideCompletedAt=completedAt;
   }
+  if(donePeriod==='morning'){
+    state.settings.lastMorningGuideCompletedDay=todayKey();
+    state.settings.lastMorningGuideCompletedAt=completedAt;
+  }
+  if(donePeriod==='afternoon'){
+    state.settings.lastAfternoonGuideCompletedDay=todayKey();
+    state.settings.lastAfternoonGuideCompletedAt=completedAt;
+  }
+  if(donePeriod==='evening'){
+    state.settings.lastEveningGuideCompletedDay=todayKey();
+    state.settings.lastEveningGuideCompletedAt=completedAt;
+  }
+  if(donePeriod==='smart'){
+    state.settings.lastSmartCheckInCompletedAt=completedAt;
+    state.settings.lastSmartCheckInCompletedSourcePeriod=finishedGuide?.sourcePeriod||currentGuidePeriod().key;
+  }
+  // Completion and active-guide clearing must be saved together.
+  // Otherwise older recovery/session candidates can restore an incomplete guide after the Done badge persists.
+  guideState=null;
+  state.settings.guideState=null;
+  state.settings.lastGuideStateClearedAt=completedAt;
+  try{markInputUpdated(completedAt);}catch(e){}
+  try{save(true); flushPendingSaveNow('guide-complete'); flushSecondaryStorageWrites();}catch(e){try{writeSavedState();}catch(err){}}
+  const box=document.getElementById('guideControls');
+  if(box){box.className='guideControls hidden'; box.innerHTML='';}
   document.querySelectorAll('.guideTarget').forEach(el=>el.classList.remove('guideTarget'));
   nav();
+  try{renderGuideStatusBadges();}catch(e){}
 }
 function syncGuideUI(){
+  try{syncGuideStateToSettings();}catch(e){}
   const box=document.getElementById('guideControls');
   document.querySelectorAll('.guideTarget').forEach(el=>el.classList.remove('guideTarget'));
   if(!guideState){
@@ -12890,7 +13025,7 @@ function importBackupText(){
   const box=document.getElementById('backupJsonBox');
   const raw=(box&&box.value?box.value:'').trim();
   if(!raw){alert('Paste backup JSON in the box first.'); return;}
-  try{let obj=JSON.parse(raw); if(obj&&obj._export) delete obj._export; state=mergeStatesNewestWins(state,migrate(obj)); active=state.settings?.activeTab||'today'; guideState=state.settings?.guideState||null; save(true); render(); alert('Backup merged/restored.');}
+  try{let obj=JSON.parse(raw); if(obj&&obj._export) delete obj._export; state=mergeStatesNewestWins(state,migrate(obj)); active=state.settings?.activeTab||'today'; state.settings=state.settings||{}; sanitizeGuideStateAfterCompletion(state.settings); guideState=state.settings?.guideState||null; save(true); render(); alert('Backup merged/restored.');}
   catch(err){alert('Invalid backup JSON.');}
 }
 
@@ -13828,10 +13963,10 @@ function buildFullBackupExport(){
   return backup;
 }
 function exportData(){downloadBackupNow('manual')}
-function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj); renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; active=state.settings?.activeTab||'today';guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
+function importData(file){if(!file)return; const r=new FileReader(); r.onload=e=>{try{const obj=JSON.parse(e.target.result); if(obj&&obj._export) delete obj._export; state=migrate(obj); renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; active=state.settings?.activeTab||'today';state.settings=state.settings||{}; sanitizeGuideStateAfterCompletion(state.settings); guideState=state.settings?.guideState||null;save(true);flushPendingSaveNow('import');flushSecondaryStorageWrites();render()}catch(err){alert('Invalid JSON')}}; r.readAsText(file)}
 function resetApp(){const typed=prompt('This permanently clears all local app data. Export a backup first if needed. Type RESET to confirm.'); if((typed||'').trim().toUpperCase()==='RESET'){clearSavedRaw(); state=loadState(); navTabsBuilt=false; renderFullMigrateLastAt=Date.now(); inputUpdatedStampCacheReady=false; render(); alert('App data reset.')}}
 function toggleTheme(){state.theme='dark'; state.settings=state.settings||{}; state.settings.themeLocked='dark'; save(); render()}
-function saveOnExit(){try{commitFocusedField(); commitPendingRangeDrafts('exit',{save:false}); save(true); flushPendingSaveNow('exit'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedRaw(JSON.stringify(state)); flushSecondaryStorageWrites();}catch(err){}}}
+function saveOnExit(){try{commitFocusedField(); commitPendingRangeDrafts('exit',{save:false}); save(true); flushPendingSaveNow('exit'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){try{state._savedAt=new Date().toISOString(); writeSavedState(); flushSecondaryStorageWrites();}catch(err){}}}
 function isExportDownloadControl(e){
   try{
     const el=e&&e.target&&e.target.closest&&e.target.closest('button,label,a,input');
