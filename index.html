@@ -4083,9 +4083,7 @@ function wave4BAnchorIsDone(anchor={},r=ensureRecoveryFields(day()),d=day()){
 function chooseNextRecoveryAnchor(d=day(),prof=null){
   d=migrateDay(d||day());
   const r=ensureRecoveryFields(d);
-  if(wave4BRecoverySkipActive(r)){
-    return {key:'skipped',label:'Skipped tonight',reason:'Recovery anchor skipped for tonight.',done:true,skipped:true,priority:0};
-  }
+  const skippedKey=wave4BRecoverySkipActive(r)?String(r.nextAnchorSkippedKey||'any'):'';
   const active=wave4BRecoveryPeriodActive(prof);
   const recoveryRisk=Number(prof?.risk||0);
   const caffeineLate=prof?['after2','after4','after6'].includes(prof.caffeineWindow):false;
@@ -4098,39 +4096,52 @@ function chooseNextRecoveryAnchor(d=day(),prof=null){
     {key:'bedroomReady',label:'Bedroom ready',reason:'Lowers friction when it is time to sleep.',priority:50}
   ];
   let candidates=anchors.filter(a=>!wave4BAnchorIsDone(a,r,d));
+  if(skippedKey && skippedKey!=='any'){
+    candidates=candidates.filter(a=>a.key!==skippedKey);
+  }
+  if(skippedKey==='any'){
+    candidates=[];
+  }
   if(!active && recoveryRisk<70){
     candidates=candidates.filter(a=>a.key!=='phoneBoundary');
   }
   candidates.sort((a,b)=>b.priority-a.priority);
-  return candidates[0] || {key:'protected',label:'Keep it protected',reason:'Core recovery anchors are covered enough for now.',done:true,priority:0};
+  if(candidates[0]) return candidates[0];
+  if(skippedKey) return {key:'skipped',label:'Skipped tonight',reason:'Recovery anchor skipped for tonight.',done:true,skipped:true,priority:0};
+  return {key:'protected',label:'Keep it protected',reason:'Core recovery anchors are covered enough for now.',done:true,priority:0};
 }
 function setNextRecoveryAnchorDone(key){
   const d=day(), r=ensureRecoveryFields(d);
   if(!key || key==='protected' || key==='skipped') return;
   const saveKey=key==='sleepWake'?'wakeTimeSet':key;
+  const now=new Date().toISOString();
   r[saveKey]=true;
-  r[saveKey+'At']=new Date().toISOString();
+  r[saveKey+'At']=now;
   if(saveKey==='phoneBoundary'){ r.nextAnchorSkippedKey=''; d.morningStart=d.morningStart||defaultMorningStart(); d.morningStart.phoneBoundary=true; d._logged=d._logged||{}; d._logged['morningStart.phoneBoundary']=true; }
   if(saveKey==='morningCue' && !String(r.morningCueText||'').trim()) r.morningCueText='Set morning cue';
   d._logged=d._logged||{};
   d._logged['recovery.'+saveKey]=true;
+  markInputUpdated(now);
   syncRecoveryNightReset(d);
   save(); render();
 }
 function skipNextRecoveryAnchor(key){
   const d=day(), r=ensureRecoveryFields(d);
+  const now=new Date().toISOString();
   r.nextAnchorSkippedKey=key||'any';
   r.nextAnchorSkippedDate=todayKey();
-  r.nextAnchorSkippedAt=new Date().toISOString();
+  r.nextAnchorSkippedAt=now;
   d._logged=d._logged||{};
   d._logged['recovery.nextAnchorSkipped']=true;
+  markInputUpdated(now);
   save(); render();
 }
 function renderNextRecoveryAnchor(prof,d=day()){
   const anchor=chooseNextRecoveryAnchor(d,prof);
   if(anchor.skipped) return `<div class="statusItem"><div class="title">Next recovery anchor</div><div class="row"><div><b>${esc(anchor.label)}</b><div class="tiny">Tomorrow protection is still available if needed.</div></div><span class="chip warn">Not tonight</span></div></div>`;
   if(anchor.done) return `<div class="statusItem"><div class="title">Next recovery anchor</div><div class="row"><div><b>${esc(anchor.label)}</b><div class="tiny">${esc(anchor.reason||'Protected enough for now.')}</div></div><span class="chip good">Covered</span></div></div>`;
-  return `<div class="statusItem"><div class="title">Next recovery anchor</div><div class="row"><div><b>${esc(anchor.label)}</b><div class="tiny">${esc(anchor.reason||'Protect tomorrow morning.')}</div></div><div class="chips" style="justify-content:flex-end"><button class="btn small" onclick="setNextRecoveryAnchorDone(${JSON.stringify(anchor.key)})">Done</button><button class="btn small" onclick="skipNextRecoveryAnchor(${JSON.stringify(anchor.key)})">Skip tonight</button></div></div></div>`;
+  const anchorKeyArg=JSON.stringify(anchor.key);
+  return `<div class="statusItem"><div class="title">Next recovery anchor</div><div class="row"><div><b>${esc(anchor.label)}</b><div class="tiny">${esc(anchor.reason||'Protect tomorrow morning.')}</div></div><div class="chips" style="justify-content:flex-end"><button class="btn small" onclick='setNextRecoveryAnchorDone(${anchorKeyArg})'>Done</button><button class="btn small" onclick='skipNextRecoveryAnchor(${anchorKeyArg})'>Skip tonight</button></div></div></div>`;
 }
 function sleepRecoveryRiskProfile(d=day()){
   d=migrateDay(d||day());
