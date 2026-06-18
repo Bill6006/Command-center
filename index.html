@@ -133,9 +133,10 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .commandHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
 .commandTitle{font-size:1.02rem;font-weight:950;margin:0 0 4px}
 .commandScore{font-size:2rem;font-weight:950;line-height:1;text-align:right}
-.commandScoreTools{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:96px}
-.commandScoreTools .chips{justify-content:flex-end}
-.commandPathBtn{align-self:flex-end;border-radius:999px;padding:6px 10px;font-size:.72rem;font-weight:900;background:rgba(110,168,254,.10);border-color:rgba(110,168,254,.28);color:#d9e7ff;white-space:nowrap;box-shadow:none}
+.commandScoreTools{display:grid;grid-template-columns:auto auto;grid-template-areas:"path score" "chips chips";align-items:center;justify-items:end;column-gap:8px;row-gap:4px;min-width:150px}
+.commandScore{grid-area:score}
+.commandScoreTools .chips{grid-area:chips;justify-content:flex-end}
+.commandPathBtn{grid-area:path;border-radius:999px;padding:5px 9px;font-size:.68rem;font-weight:900;background:rgba(110,168,254,.10);border-color:rgba(110,168,254,.28);color:#d9e7ff;white-space:nowrap;box-shadow:none;line-height:1.05}
 .commandPathBtn:hover,.commandPathBtn:focus{border-color:rgba(110,168,254,.50);background:rgba(110,168,254,.16)}
 .commandGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
 .commandGrid>div{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px;min-width:0}
@@ -153,7 +154,7 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .minimumWinCard.compact .minimumWinList{gap:8px}
 .minimumWinCard.compact .minimumWinItem{padding:10px 12px;font-size:.98rem}
 .minimumWinCard.compact h2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-@media(max-width:760px){.commandGrid{grid-template-columns:1fr}.commandHead{flex-direction:column}.commandScore{text-align:left}.commandScoreTools{align-items:flex-start}.commandScoreTools .chips{justify-content:flex-start}.commandPathBtn{align-self:flex-start}.commandCard{grid-column:span 12!important}}
+@media(max-width:760px){.commandGrid{grid-template-columns:1fr}.commandHead{flex-direction:row;gap:8px}.commandHead>div:first-child{min-width:0;flex:1 1 auto}.commandScore{text-align:right}.commandScoreTools{flex:0 0 auto;min-width:138px;column-gap:6px}.commandScoreTools .chips{justify-content:flex-end}.commandPathBtn{padding:5px 8px;font-size:.66rem}.commandCard{grid-column:span 12!important}}
 
 
 .card h2 .chip{font-size:.72rem;vertical-align:middle;margin-left:8px;font-weight:800}
@@ -4527,7 +4528,7 @@ function renderTodayCommandCard(){
   return `<div class="card span8 commandCard" id="guide-today-forecast">
     <div class="commandHead">
       <div><div class="commandTitle">Today Command</div><div class="tiny">One command. Deeper logic stays underneath.</div></div>
-      <div class="commandScoreTools"><div class="commandScore">${c.score}%</div><div class="chips"><span class="chip ${color}">${esc(c.band)}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(c.mode)}</span></div><button type="button" class="btn small commandPathBtn" onclick="jumpToForecastPath()">Day Path</button></div>
+      <div class="commandScoreTools"><div class="commandScore">${c.score}%</div><div class="chips"><span class="chip ${color}">${esc(c.band)}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(c.mode)}</span></div><button type="button" class="btn small commandPathBtn" onclick="jumpToForecastPath()">Forecast Path</button></div>
     </div>
     <div class="commandGrid">
       <div><span class="tiny">Main bottleneck</span><b>${esc(c.mainBottleneck)}</b></div>
