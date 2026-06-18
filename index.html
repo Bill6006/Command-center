@@ -87,6 +87,13 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .forecastMatrix b{display:block;margin-top:3px;font-size:.82rem}
 @media(max-width:760px){.forecastMatrix{grid-template-columns:1fr}}
 
+.forecastDayPath{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+.forecastDayPathBlock{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px;min-width:0}
+.forecastDayPathBlock b{display:block;margin-top:3px;font-size:.86rem;line-height:1.2}
+.forecastDayPathBlock .pathRead{margin-top:5px;color:var(--muted);font-size:.76rem;line-height:1.25}
+@media(max-width:760px){.forecastDayPath{grid-template-columns:1fr 1fr}}
+@media(max-width:460px){.forecastDayPath{grid-template-columns:1fr}}
+
 /* dark-theme-lock */
 [data-theme="light"]{--bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447; --accent:#6ea8fe; --gold:#d6a84f; --green:#4ade80; --red:#fb7185; --orange:#fb923c; --blue:#38bdf8; --shadow:0 12px 30px rgba(0,0,0,.28)}
 
@@ -4507,6 +4514,139 @@ function renderTodayCommandCard(){
   </div>`;
 }
 
+
+function forecastDayPathValue(ctx,key){
+  try{
+    if(ctx?.values && key in ctx.values) return Number(ctx.values[key]);
+    return Number(ctx?.[key]);
+  }catch(e){return NaN;}
+}
+function forecastDayPathLimiter(ctx,periodKey){
+  try{
+    const recRisk=Number(ctx?.recovery?.risk||ctx?.actions?.recoveryRisk||0);
+    const energy=forecastDayPathValue(ctx,'energy');
+    const mood=forecastDayPathValue(ctx,'mood');
+    const focus=forecastDayPathValue(ctx,'focus');
+    const drive=forecastDayPathValue(ctx,'drive');
+    const overwhelm=forecastDayPathValue(ctx,'overwhelm');
+    if(recRisk>=65 || ctx?.veryLowSleep || (periodKey==='evening' && (ctx?.lateCaffeine || ctx?.nightStress))) return 'recovery / sleep';
+    if(ctx?.noWater) return periodKey==='morning'?'light + water':'hydration';
+    if(ctx?.foodRisk || ctx?.earlierFoodRisk || ctx?.nightFoodRisk) return 'food stability';
+    if(Number.isFinite(energy) && energy<=4) return 'body energy';
+    if(Number.isFinite(focus) && focus<=4) return 'focus';
+    if(Number.isFinite(drive) && drive<=4) return 'drive';
+    if(Number.isFinite(overwhelm) && overwhelm>=7) return 'overwhelm';
+    if(Number.isFinite(mood) && mood<=4) return 'mood';
+    if(periodKey==='afternoon' && !ctx?.actions?.azure) return 'mission drift';
+    if(periodKey==='evening' && !ctx?.actions?.nightReset) return 'night reset';
+    if(!ctx?.currentStateLogged) return 'current signal';
+    return 'no major limiter';
+  }catch(e){return 'Not enough signal yet';}
+}
+function forecastDayPathDirection(ctx,periodKey){
+  try{
+    const recRisk=Number(ctx?.recovery?.risk||ctx?.actions?.recoveryRisk||0);
+    if(!ctx?.todayHasInputs && !ctx?.currentStateLogged) return 'Not enough signal yet';
+    if(ctx?.veryLowState || ctx?.veryLowSleep || recRisk>=75) return 'high support needed';
+    if(ctx?.lowState || ctx?.lowSleep || ctx?.noWater || ctx?.foodRisk || ctx?.earlierFoodRisk || ctx?.lateCaffeine || (Number(ctx?.overwhelm||0)>=7)) return 'possible dip';
+    if(ctx?.goodState && recRisk<45 && !ctx?.noWater) return 'protected';
+    if(periodKey==='evening' && recRisk>=55) return 'recovery risk';
+    return 'baseline';
+  }catch(e){return 'Not enough signal yet';}
+}
+function forecastDayPathLever(ctx,periodKey){
+  try{
+    const limiter=forecastDayPathLimiter(ctx,periodKey);
+    if(limiter==='hydration' || limiter==='light + water') return periodKey==='morning'?'light + water':'water + short walk';
+    if(limiter==='food stability') return 'food + water reset';
+    if(limiter==='body energy') return 'tiny movement + water';
+    if(limiter==='focus') return 'one clean 10-minute block';
+    if(limiter==='drive') return 'minimum win only';
+    if(limiter==='overwhelm') return 'lower stimulation';
+    if(limiter==='mood') return 'repeat a mood lifter';
+    if(limiter==='mission drift') return 'one proof rep';
+    if(limiter==='night reset' || limiter==='recovery / sleep') return 'phone boundary + sleep anchor';
+    if(limiter==='current signal') return 'log current state';
+    if(periodKey==='morning') return 'build the floor';
+    if(periodKey==='afternoon') return 'protect the dip';
+    if(periodKey==='evening') return 'close the loop';
+    return 'protect tomorrow';
+  }catch(e){return 'Use today’s logs to sharpen this';}
+}
+function forecastDayPathRead(ctx,periodKey){
+  try{
+    if(!ctx?.todayHasInputs && !ctx?.currentStateLogged) return 'Use today’s logs to sharpen this.';
+    const dir=forecastDayPathDirection(ctx,periodKey);
+    const limiter=forecastDayPathLimiter(ctx,periodKey);
+    if(dir==='protected') return 'This block looks supported if you keep the basic anchor.';
+    if(dir==='possible dip') return `${guidePeriodLabel(periodKey)} may dip unless ${limiter} gets support.`;
+    if(dir==='high support needed') return 'Keep this block small and protective; do not force a big push.';
+    if(dir==='recovery risk') return 'Tomorrow depends most on the closeout and sleep boundary.';
+    if(dir==='Not enough signal yet') return 'Current block only; add logs to sharpen this.';
+    return `${guidePeriodLabel(periodKey)} looks usable; keep the next move simple.`;
+  }catch(e){return 'Current block only; not enough signal yet.';}
+}
+function forecastTomorrowPathBlock(d=day()){
+  try{
+    d=d||day();
+    const r={...defaultRecoveryDay(),...(d.recovery||{})};
+    const prof=sleepRecoveryRiskProfile(d);
+    const anchors={
+      caffeine:!!r.caffeineCutoff,
+      phone:!!(r.phoneBoundary||d.morningStart?.phoneBoundary),
+      wake:!!(r.wakeTimeSet||r.targetWakeTime),
+      cue:!!(r.morningCue||r.morningCueText),
+      min:!!(r.tomorrowMinimum||String(d.review?.['What is tomorrow’s minimum win?']||r.tomorrowMinimumText||'').trim())
+    };
+    const covered=Object.values(anchors).filter(Boolean).length;
+    const risk=Number(prof?.risk||0);
+    let direction='protected if sleep anchor is done';
+    if(risk>=70) direction='recovery risk';
+    else if(covered>=4) direction='protected';
+    else if(covered>=2) direction='partly protected';
+    else direction='needs setup';
+    let limiter='sleep anchor';
+    if(!anchors.caffeine) limiter='caffeine cutoff';
+    else if(!anchors.phone) limiter='phone boundary';
+    else if(!anchors.wake) limiter='wake time';
+    else if(!anchors.cue) limiter='morning cue';
+    else if(!anchors.min) limiter='tomorrow minimum';
+    else limiter='keep it light';
+    const lever=covered>=4?'keep anchors protected':`finish ${limiter}`;
+    const read=covered>=4?'Tomorrow has a better floor if you do not reopen the night.':'One recovery anchor can protect tomorrow morning.';
+    return {label:'Tomorrow',direction,limiter,lever,read};
+  }catch(e){return {label:'Tomorrow',direction:'Not enough signal yet',limiter:'recovery setup',lever:'use today’s logs',read:'Use today’s logs to sharpen this.'};}
+}
+function buildForecastDayPath(d=day()){
+  try{
+    d=migrateDay(d||day());
+    const periods=['morning','afternoon','evening'];
+    const blocks=periods.map(p=>{
+      const ctx=buildForecastContext(d,{periodKey:p});
+      return {label:guidePeriodLabel(p),direction:forecastDayPathDirection(ctx,p),limiter:forecastDayPathLimiter(ctx,p),lever:forecastDayPathLever(ctx,p),read:forecastDayPathRead(ctx,p)};
+    });
+    blocks.push(forecastTomorrowPathBlock(d));
+    return blocks;
+  }catch(e){
+    return [{label:'Morning',direction:'Not enough signal yet',limiter:'current signal',lever:'log current state',read:'Use today’s logs to sharpen this.'},{label:'Afternoon',direction:'Current block only',limiter:'current signal',lever:'log current state',read:'Use today’s logs to sharpen this.'},{label:'Evening',direction:'Current block only',limiter:'recovery setup',lever:'sleep anchor',read:'Use today’s logs to sharpen this.'},{label:'Tomorrow',direction:'Not enough signal yet',limiter:'recovery setup',lever:'use today’s logs',read:'Use today’s logs to sharpen this.'}];
+  }
+}
+function forecastDayPathHtml(){
+  const blocks=buildForecastDayPath(day());
+  return `<div class="forecastDayPath">${blocks.map(b=>`<div class="forecastDayPathBlock"><span class="tiny">${esc(b.label)}</span><b>${esc(b.direction)}</b><div class="tiny" style="margin-top:5px">Limiter: ${esc(b.limiter)}</div><div class="tiny">Lever: ${esc(b.lever)}</div><div class="pathRead">${esc(b.read)}</div></div>`).join('')}</div>`;
+}
+function hydrateForecastDayPath(el){
+  try{
+    if(!el || !el.open) return;
+    const box=el.querySelector('[data-forecast-day-path-lazy]');
+    if(!box || box.dataset.rendered==='1') return;
+    box.innerHTML=forecastDayPathHtml();
+    box.dataset.rendered='1';
+  }catch(e){
+    try{const box=el.querySelector('[data-forecast-day-path-lazy]'); if(box) box.innerHTML='<div class="tiny">Forecast path could not load.</div>'; }catch(_e){}
+  }
+}
+
 function hydrateForecastDetails(el){
   try{
     if(!el || !el.open) return;
@@ -4516,6 +4656,10 @@ function hydrateForecastDetails(el){
     const displayMove=forecastDisplayMove(f);
     box.innerHTML=`
       ${peakForecastLevel5Html(f,displayMove)}
+      <details class="forecastDetails" style="margin-top:10px" ontoggle="hydrateForecastDayPath(this)">
+        <summary class="tiny">Forecast Path</summary>
+        <div data-forecast-day-path-lazy="1" class="tiny" style="margin-top:8px">Day Path loads when opened.</div>
+      </details>
       <div class="quote" style="margin-top:10px"><b>Peak Aim:</b> ${esc(growthSafeText(f.peakAim||'Make the next block better.'))}</div>
       <div class="chips" style="margin-top:8px"><span class="chip">${esc(f.moveDomain||'Body / Energy')}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(f.moveMode||'Lift')} purpose</span></div>
       <div style="margin-top:10px"><h3>Why this forecast looks this way</h3><div class="reasonGroups">${forecastReasonGroupsHtml(f.reasons,f)}</div></div>`;
