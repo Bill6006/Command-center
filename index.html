@@ -88,29 +88,38 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 @media(max-width:760px){.forecastMatrix{grid-template-columns:1fr}}
 
 .forecastDayPath{display:grid;gap:8px;margin-top:8px}
-.forecastPathRoute{position:relative;display:grid;gap:9px;margin-top:8px;padding-left:18px}
-.forecastPathRoute::before{content:'';position:absolute;left:7px;top:20px;bottom:20px;width:2px;border-radius:999px;background:linear-gradient(180deg,rgba(56,189,248,.55),rgba(214,168,79,.45),rgba(74,222,128,.45))}
-.forecastPathNode{position:relative;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.045),var(--panel2));border-radius:14px;padding:10px 10px 10px 12px;min-width:0}
-.forecastPathNode::before{content:'';position:absolute;left:-16px;top:18px;width:12px;height:12px;border-radius:999px;background:var(--panel);border:2px solid rgba(110,168,254,.85);box-shadow:0 0 0 4px rgba(110,168,254,.13)}
+.forecastPathLegend{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 8px;color:var(--muted);font-size:.72rem;line-height:1.25}
+.forecastPathLegend b{color:var(--text);font-size:.78rem}
+.forecastPathMini{display:flex;align-items:center;gap:5px;margin:7px 0 9px;padding:8px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.025);border-radius:13px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.forecastPathMini::-webkit-scrollbar{display:none}
+.forecastPathMiniChip{flex:0 0 auto;min-width:72px;border:1px solid rgba(148,163,184,.18);background:rgba(15,23,42,.34);border-radius:12px;padding:6px 7px;text-align:center}
+.forecastPathMiniChip b{display:block;font-size:.66rem;color:var(--muted);font-weight:900;line-height:1.1}
+.forecastPathMiniChip span{display:block;margin-top:3px;font-size:.78rem;color:var(--text);font-weight:950;line-height:1.1}
+.forecastPathMiniChip.unsure span{font-size:.68rem;color:var(--muted);font-weight:850}
+.forecastPathMiniArrow{flex:0 0 auto;color:var(--muted);font-weight:950;opacity:.76}
+.forecastPathRoute{position:relative;display:grid;gap:8px;margin-top:8px;padding-left:19px}
+.forecastPathRoute::before{content:'';position:absolute;left:7px;top:21px;bottom:21px;width:2px;border-radius:999px;background:linear-gradient(180deg,rgba(56,189,248,.55),rgba(214,168,79,.45),rgba(74,222,128,.45))}
+.forecastPathNode{position:relative;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.045),var(--panel2));border-radius:15px;padding:10px 10px 9px 12px;min-width:0;box-shadow:0 5px 15px rgba(0,0,0,.10)}
+.forecastPathNode.tomorrow{border-color:rgba(74,222,128,.24);background:linear-gradient(180deg,rgba(74,222,128,.065),var(--panel2))}
+.forecastPathNode::before{content:'';position:absolute;left:-17px;top:20px;width:12px;height:12px;border-radius:999px;background:var(--panel);border:2px solid rgba(110,168,254,.85);box-shadow:0 0 0 4px rgba(110,168,254,.13)}
 .forecastPathNode.good::before{border-color:rgba(74,222,128,.90);box-shadow:0 0 0 4px rgba(74,222,128,.12)}
 .forecastPathNode.warn::before{border-color:rgba(214,168,79,.95);box-shadow:0 0 0 4px rgba(214,168,79,.13)}
 .forecastPathNode.bad::before{border-color:rgba(251,113,133,.95);box-shadow:0 0 0 4px rgba(251,113,133,.13)}
-.forecastPathNodeTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.forecastPathNodeTop{display:flex;justify-content:space-between;gap:9px;align-items:flex-start}
 .forecastPathNodeTitle{display:flex;gap:7px;align-items:center;min-width:0;flex-wrap:wrap}
-.forecastPathNodeTitle b{font-size:.92rem;line-height:1.1}
-.forecastPathScore{font-weight:950;font-size:.92rem;border:1px solid var(--line);background:rgba(255,255,255,.055);border-radius:999px;padding:4px 8px;white-space:nowrap}
-.forecastPathScore.unsure{font-size:.75rem;color:var(--muted);font-weight:850}
-.forecastPathTrend{font-size:.72rem;font-weight:900;border-radius:999px;border:1px solid rgba(148,163,184,.24);color:var(--muted);padding:3px 7px;white-space:nowrap}
-.forecastPathStatus{font-weight:900;line-height:1.2;margin-top:6px}
-.forecastPathLever{margin-top:5px;color:var(--muted);font-size:.79rem;line-height:1.25}
-.forecastPathRead{margin-top:5px;color:var(--muted);font-size:.76rem;line-height:1.25}
-.forecastPathMini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end;margin:8px 0 4px;padding:8px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.025);border-radius:12px}
-.forecastPathMiniPoint{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
-.forecastPathMiniBar{width:100%;max-width:40px;border-radius:999px;background:linear-gradient(180deg,rgba(56,189,248,.50),rgba(74,222,128,.46));min-height:8px}
-.forecastPathMiniBar.missing{background:rgba(148,163,184,.22)}
-.forecastPathMiniLabel{font-size:.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-@media(min-width:760px){.forecastPathRoute{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:0}.forecastPathRoute::before{left:8%;right:8%;top:25px;bottom:auto;width:auto;height:2px;background:linear-gradient(90deg,rgba(56,189,248,.55),rgba(214,168,79,.45),rgba(74,222,128,.45))}.forecastPathNode{padding:10px}.forecastPathNode::before{left:calc(50% - 6px);top:-15px}}
-@media(max-width:430px){.forecastPathScore{font-size:.86rem}.forecastPathNode{padding-right:8px}.forecastPathMini{gap:4px;padding:7px}.forecastPathMiniLabel{font-size:.58rem}}
+.forecastPathNodeTitle b{font-size:.95rem;line-height:1.1}
+.forecastPathScore{font-weight:950;font-size:.92rem;border:1px solid rgba(148,163,184,.22);background:rgba(255,255,255,.055);border-radius:999px;padding:4px 8px;white-space:nowrap;line-height:1.1}
+.forecastPathScore.unsure{font-size:.72rem;color:var(--muted);font-weight:850;max-width:112px;white-space:normal;text-align:center}
+.forecastPathTrend{font-size:.70rem;font-weight:950;border-radius:999px;border:1px solid rgba(148,163,184,.24);color:var(--muted);background:rgba(255,255,255,.035);padding:3px 7px;white-space:nowrap;line-height:1}
+.forecastPathStatus{display:inline-flex;margin-top:7px;font-weight:950;line-height:1.12;border-radius:999px;padding:4px 8px;background:rgba(110,168,254,.09);border:1px solid rgba(110,168,254,.16);font-size:.82rem}
+.forecastPathNode.good .forecastPathStatus{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.15)}
+.forecastPathNode.bad .forecastPathStatus{background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.16)}
+.forecastPathMeta{display:grid;grid-template-columns:1fr;gap:5px;margin-top:8px}
+.forecastPathMetaRow{display:flex;align-items:flex-start;gap:6px;color:var(--muted);font-size:.78rem;line-height:1.22}
+.forecastPathMetaRow b{flex:0 0 auto;color:var(--text);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;opacity:.82;min-width:42px}
+.forecastPathRead{margin-top:7px;color:var(--muted);font-size:.74rem;line-height:1.22;border-top:1px solid rgba(148,163,184,.12);padding-top:7px}
+@media(min-width:760px){.forecastPathRoute{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:0;gap:9px;margin-top:18px}.forecastPathRoute::before{left:8%;right:8%;top:-9px;bottom:auto;width:auto;height:2px;background:linear-gradient(90deg,rgba(56,189,248,.55),rgba(214,168,79,.45),rgba(74,222,128,.45))}.forecastPathNode{padding:10px}.forecastPathNode::before{left:calc(50% - 6px);top:-16px}.forecastPathMeta{gap:6px}.forecastPathRead{min-height:34px}}
+@media(max-width:430px){.forecastPathLegend{font-size:.69rem}.forecastPathMiniChip{min-width:68px;padding:6px}.forecastPathScore{font-size:.86rem}.forecastPathNode{padding-right:8px}.forecastPathNodeTitle b{font-size:.92rem}.forecastPathStatus{font-size:.80rem}}
 
 /* dark-theme-lock */
 [data-theme="light"]{--bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447; --accent:#6ea8fe; --gold:#d6a84f; --green:#4ade80; --red:#fb7185; --orange:#fb923c; --blue:#38bdf8; --shadow:0 12px 30px rgba(0,0,0,.28)}
@@ -4659,6 +4668,24 @@ function forecastPathMiniLabel(block){
   if(block && Number.isFinite(Number(block.score))) return `${block.label} ${Math.round(Number(block.score))}%`;
   return `${block?.label||'Block'} —`;
 }
+function forecastPathTrendText(raw){
+  raw=String(raw||'');
+  if(raw.includes('signal')) return 'signal needed';
+  if(raw.includes('current')) return 'start';
+  if(raw.includes('steady')) return 'steady';
+  if(raw.includes('↗')) return 'improving';
+  if(raw.includes('↘')) return 'dipping';
+  return raw.replace(/[↗↘→]/g,'').trim()||'steady';
+}
+function forecastPathMicroRead(block){
+  try{
+    if(!block || !Number.isFinite(Number(block.score))) return 'Log this block to sharpen the path.';
+    if(block.scoreMeaning==='readiness') return 'Tomorrow depends on tonight’s anchors.';
+    if(String(block.trend||'').includes('↘')) return 'Protect this block early.';
+    if(String(block.trend||'').includes('↗')) return 'Momentum is building.';
+    return '';
+  }catch(e){return '';}
+}
 function forecastPathBlockForPeriod(d,periodKey){
   try{
     d=migrateDay(d||day());
@@ -4731,18 +4758,21 @@ function buildForecastDayPath(d=day()){
 }
 function forecastDayPathHtml(){
   const blocks=buildForecastDayPath(day());
-  const mini=blocks.map(b=>{
+  const mini=blocks.map((b,i)=>{
     const hasScore=Number.isFinite(Number(b.score));
-    const height=hasScore?Math.max(10,Math.min(40,8+Number(b.score)*.32)):10;
-    return `<div class="forecastPathMiniPoint"><div class="forecastPathMiniBar ${hasScore?'':'missing'}" style="height:${height}px"></div><div class="forecastPathMiniLabel">${esc(forecastPathMiniLabel(b))}</div></div>`;
+    const shortLabel=String(b.label||'Block').replace('Afternoon','Aftern.');
+    const chip=`<div class="forecastPathMiniChip ${hasScore?'':'unsure'}"><b>${esc(shortLabel)}</b><span>${esc(hasScore?Math.round(Number(b.score))+'%':'signal')}</span></div>`;
+    return chip+(i<blocks.length-1?'<span class="forecastPathMiniArrow">→</span>':'');
   }).join('');
   const route=blocks.map(b=>{
     const hasScore=Number.isFinite(Number(b.score));
     const scoreText=forecastPathScoreDisplay(b);
-    const meaning=hasScore ? (b.scoreMeaning==='readiness'?'readiness':'outlook') : 'signal';
-    return `<div class="forecastPathNode ${esc(b.kind||'warn')}"><div class="forecastPathNodeTop"><div class="forecastPathNodeTitle"><b>${esc(b.label)}</b><span class="forecastPathTrend">${esc(b.trend||'→ signal needed')}</span></div><span class="forecastPathScore ${hasScore?'':'unsure'}">${esc(scoreText)}</span></div><div class="forecastPathStatus">${esc(b.direction)}</div><div class="forecastPathLever">${esc(meaning)} · ${esc(b.limiter)} → ${esc(b.lever)}</div><div class="forecastPathRead">${esc(b.read)}</div></div>`;
+    const trendText=forecastPathTrendText(b.trend||'→ signal needed');
+    const isTomorrow=b.scoreMeaning==='readiness';
+    const read=forecastPathMicroRead(b);
+    return `<div class="forecastPathNode ${esc(b.kind||'warn')} ${isTomorrow?'tomorrow':''}"><div class="forecastPathNodeTop"><div class="forecastPathNodeTitle"><b>${esc(b.label)}</b><span class="forecastPathTrend">${esc(trendText)}</span></div><span class="forecastPathScore ${hasScore?'':'unsure'}">${esc(scoreText)}</span></div><div class="forecastPathStatus">${esc(b.direction)}</div><div class="forecastPathMeta"><div class="forecastPathMetaRow"><b>${isTomorrow?'Risk':'Limit'}</b><span>${esc(b.limiter)}</span></div><div class="forecastPathMetaRow"><b>${isTomorrow?'Protect':'Lever'}</b><span>${esc(b.lever)}</span></div></div>${read?`<div class="forecastPathRead">${esc(read)}</div>`:''}</div>`;
   }).join('');
-  return `<div class="forecastDayPath"><div class="tiny" style="margin-bottom:6px">Path numbers use the existing forecast scale. Morning/Afternoon/Evening = outlook. Tomorrow = recovery readiness. Missing signal does not get a fake percent.</div><div class="forecastPathMini">${mini}</div><div class="forecastPathRoute">${route}</div></div>`;
+  return `<div class="forecastDayPath"><div class="forecastPathLegend"><b>Day route</b><span>Outlook now; Tomorrow = readiness. No signal = no fake percent.</span></div><div class="forecastPathMini">${mini}</div><div class="forecastPathRoute">${route}</div></div>`;
 }
 function hydrateForecastDayPath(el){
   try{
