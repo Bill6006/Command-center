@@ -133,6 +133,10 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .commandHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
 .commandTitle{font-size:1.02rem;font-weight:950;margin:0 0 4px}
 .commandScore{font-size:2rem;font-weight:950;line-height:1;text-align:right}
+.commandScoreTools{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:96px}
+.commandScoreTools .chips{justify-content:flex-end}
+.commandPathBtn{align-self:flex-end;border-radius:999px;padding:6px 10px;font-size:.72rem;font-weight:900;background:rgba(110,168,254,.10);border-color:rgba(110,168,254,.28);color:#d9e7ff;white-space:nowrap;box-shadow:none}
+.commandPathBtn:hover,.commandPathBtn:focus{border-color:rgba(110,168,254,.50);background:rgba(110,168,254,.16)}
 .commandGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
 .commandGrid>div{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px;min-width:0}
 .commandGrid .tiny{display:block;margin-bottom:3px}
@@ -149,7 +153,7 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .minimumWinCard.compact .minimumWinList{gap:8px}
 .minimumWinCard.compact .minimumWinItem{padding:10px 12px;font-size:.98rem}
 .minimumWinCard.compact h2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-@media(max-width:760px){.commandGrid{grid-template-columns:1fr}.commandHead{flex-direction:column}.commandScore{text-align:left}.commandCard{grid-column:span 12!important}}
+@media(max-width:760px){.commandGrid{grid-template-columns:1fr}.commandHead{flex-direction:column}.commandScore{text-align:left}.commandScoreTools{align-items:flex-start}.commandScoreTools .chips{justify-content:flex-start}.commandPathBtn{align-self:flex-start}.commandCard{grid-column:span 12!important}}
 
 
 .card h2 .chip{font-size:.72rem;vertical-align:middle;margin-left:8px;font-weight:800}
@@ -4523,7 +4527,7 @@ function renderTodayCommandCard(){
   return `<div class="card span8 commandCard" id="guide-today-forecast">
     <div class="commandHead">
       <div><div class="commandTitle">Today Command</div><div class="tiny">One command. Deeper logic stays underneath.</div></div>
-      <div><div class="commandScore">${c.score}%</div><div class="chips" style="justify-content:flex-end"><span class="chip ${color}">${esc(c.band)}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(c.mode)}</span></div></div>
+      <div class="commandScoreTools"><div class="commandScore">${c.score}%</div><div class="chips"><span class="chip ${color}">${esc(c.band)}</span><span class="chip ${peakModeClass(f.moveMode)}">${esc(c.mode)}</span></div><button type="button" class="btn small commandPathBtn" onclick="jumpToForecastPath()">Day Path</button></div>
     </div>
     <div class="commandGrid">
       <div><span class="tiny">Main bottleneck</span><b>${esc(c.mainBottleneck)}</b></div>
@@ -4803,6 +4807,31 @@ function hydrateForecastDayPath(el){
   }
 }
 
+function jumpToForecastPath(){
+  try{
+    const card=document.getElementById('guide-today-forecast-why');
+    if(!card){return;}
+    const detailsList=card.querySelectorAll('details.forecastDetails');
+    const main=detailsList&&detailsList.length?detailsList[0]:null;
+    if(main){
+      if(!main.open) main.open=true;
+      hydrateForecastDetails(main);
+    }
+    setTimeout(()=>{
+      try{
+        const path=document.getElementById('forecastPathDetails') || card.querySelector('[data-forecast-path-details]');
+        if(path){
+          if(!path.open) path.open=true;
+          hydrateForecastDayPath(path);
+          path.scrollIntoView({behavior:'smooth',block:'start'});
+        }else{
+          card.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+      }catch(_e){}
+    },20);
+  }catch(e){}
+}
+
 function hydrateForecastDetails(el){
   try{
     if(!el || !el.open) return;
@@ -4812,7 +4841,7 @@ function hydrateForecastDetails(el){
     const displayMove=forecastDisplayMove(f);
     box.innerHTML=`
       ${peakForecastLevel5Html(f,displayMove)}
-      <details class="forecastDetails" style="margin-top:10px" ontoggle="hydrateForecastDayPath(this)">
+      <details class="forecastDetails" id="forecastPathDetails" data-forecast-path-details="1" style="margin-top:10px" ontoggle="hydrateForecastDayPath(this)">
         <summary class="tiny">Forecast Path</summary>
         <div data-forecast-day-path-lazy="1" class="tiny" style="margin-top:8px">Day Path loads when opened.</div>
       </details>
