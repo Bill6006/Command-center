@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center v288 backup integrity guard</title>
+<title>Tyree Life Command Center v287 anti-rollback</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -34,15 +34,15 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .storageStatus{border:1px solid rgba(214,168,79,.38);background:rgba(214,168,79,.08);border-radius:14px;padding:9px 10px;color:var(--muted);font-size:.82rem;line-height:1.35}
 .storageStatus.good{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)}
 .backupBox{min-height:72px;font-size:.78rem}
-
-.backupHealth{border:1px solid rgba(110,168,254,.30);background:rgba(110,168,254,.07);border-radius:14px;padding:10px;margin:10px 0;line-height:1.35}
-.backupHealth.warn{border-color:rgba(214,168,79,.48);background:rgba(214,168,79,.09)}
-.backupHealth.bad{border-color:rgba(251,113,133,.48);background:rgba(251,113,133,.09)}
+.backupHealth{border:1px solid rgba(110,168,254,.30);background:rgba(110,168,254,.07);border-radius:14px;padding:10px;margin:8px 0 10px;line-height:1.35}
+.backupHealth.warn{border-color:rgba(214,168,79,.45);background:rgba(214,168,79,.08)}
+.backupHealth.bad{border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.08)}
+.backupHealth.good{border-color:rgba(74,222,128,.38);background:rgba(74,222,128,.07)}
 .backupHealthGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
 .backupHealthItem{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px;min-width:0}
-.backupHealthItem b{display:block;font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.backupHealthItem span{font-weight:900;overflow-wrap:anywhere}
-@media(max-width:520px){.backupHealthGrid{grid-template-columns:1fr 1fr}.backupHealthItem{padding:7px}.backupHealthItem b{font-size:.68rem}.backupHealthItem span{font-size:.82rem}}
+.backupHealthItem b{display:block;color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.backupHealthItem span{display:block;font-weight:900;overflow-wrap:anywhere}
+@media(max-width:520px){.backupHealthGrid{grid-template-columns:1fr 1fr}.backupHealthItem{padding:7px}.backupHealthItem span{font-size:.86rem}}
 
 .moodTimelineList{display:grid;gap:7px;margin-top:10px}.moodTimelineItem{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px}.moodTimelineItem .topline{display:flex;justify-content:space-between;gap:8px;align-items:center}.moodTimelineItem .note{margin-top:5px;color:var(--muted);font-size:.86rem;line-height:1.35}.moodTimelineQuick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.moodTimelineQuick .btn{font-size:.76rem;padding:6px 8px}.energyShiftTags{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin:8px 0}.energyShiftTags label{margin:0}.energyShiftItem{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px}.energyShiftItem .topline{display:flex;justify-content:space-between;gap:8px;align-items:center}.energyShiftItem .note{margin-top:5px;color:var(--muted);font-size:.86rem;line-height:1.35}@media(max-width:520px){.energyShiftTags{grid-template-columns:1fr}.app{overflow-x:hidden}}
 
@@ -832,69 +832,6 @@ function autoBackupSettingsHtml(){
 }
 let autoBackupTimer=null;
 let autoBackupBusy=false;
-
-function backupDayKeys(s){
-  try{return Object.keys(s?.days||{}).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();}catch(e){return []}
-}
-function backupByteEstimate(rawOrObj){
-  try{if(typeof rawOrObj==='string') return (new TextEncoder().encode(rawOrObj)).length; return (new TextEncoder().encode(JSON.stringify(rawOrObj||{}))).length;}catch(e){try{return JSON.stringify(rawOrObj||'').length}catch(_){return 0}}
-}
-function backupDomainPresence(s){
-  s=s||{}; return {azure:!!(s.azure&&typeof s.azure==='object'),adaya:!!(s.adaya&&typeof s.adaya==='object'),money:!!(s.money&&typeof s.money==='object'),faith:!!(s.faith&&typeof s.faith==='object'),learning:!!(s.learning&&typeof s.learning==='object'),settings:!!(s.settings&&typeof s.settings==='object')};
-}
-function adayaSkillSignature(s){
-  try{const vals=Object.values(s?.adaya?.skills||{}); return {total:vals.length,progressed:vals.filter(v=>{try{return normalizeAdayaStage(v)!=='Not Introduced'}catch(e){return !!v}}).length,custom:Array.isArray(s?.adaya?.customSkills)?s.adaya.customSkills.length:0};}catch(e){return {total:0,progressed:0,custom:0}}
-}
-function azureProofBackupSignature(s){
-  try{const az=s?.azure||{}, proof=az.proof||{}, skills=az.skills||{}; return {present:!!az,currentSkill:proof.currentSkill||'',proofQueue:Array.isArray(proof.proofQueue)?proof.proofQueue.length:0,proofLog:Array.isArray(proof.proofLog)?proof.proofLog.length:0,weakTopics:Array.isArray(proof.weakTopics)?proof.weakTopics.length:0,progressedSkills:Object.values(skills).filter(v=>azureProofStageIndexSafe(azureStageFromSkillStatusSafe(v))>0).length,meaningScore:azureDomainMeaningScore(s)};}catch(e){return {present:false,currentSkill:'',proofQueue:0,proofLog:0,weakTopics:0,progressedSkills:0,meaningScore:0}}
-}
-function backupIntegritySignature(s, raw){
-  try{ s=s||{}; const days=backupDayKeys(s); const sig={dayCount:days.length,oldestDay:days[0]||null,newestDay:days[days.length-1]||null,sizeBytes:backupByteEstimate(raw||stateForStorage(s)),backupType:s?._tlccCriticalRecovery?'Recovery':'Full',domains:backupDomainPresence(s),azure:azureProofBackupSignature(s),adaya:adayaSkillSignature(s),inputUpdatedAt:s._inputUpdatedAt||s._lastMeaningfulInputAt||null,antiRollbackStamp:stateAntiRollbackStamp(s)||0}; sig.presentDomainCount=Object.values(sig.domains).filter(Boolean).length; return sig;}catch(e){return {dayCount:0,oldestDay:null,newestDay:null,sizeBytes:0,backupType:'Partial',domains:{},azure:{meaningScore:0,progressedSkills:0,proofQueue:0,proofLog:0},adaya:{total:0,progressed:0,custom:0},presentDomainCount:0,inputUpdatedAt:null,antiRollbackStamp:0}}
-}
-function dateKeyToTime(k){try{return k?new Date(String(k)+'T12:00:00').getTime():0}catch(e){return 0}}
-function betterBackupBaselineSignature(){
-  try{const sigs=[]; const pushSig=sig=>{if(sig&&typeof sig==='object'&&Number(sig.dayCount)>=0)sigs.push(sig)}; pushSig(state?._backupIntegrity?.lastFullSignature); const raws=[]; try{raws.push(localStorage.getItem(STATE_LAST_GOOD_KEY));}catch(e){} try{raws.push(localStorage.getItem(LS_KEY));}catch(e){} try{raws.push(localStorage.getItem(STATE_BACKUP_KEY));}catch(e){} raws.forEach(raw=>{try{if(raw){const obj=JSON.parse(raw); if(!obj?._tlccCriticalRecovery) pushSig(backupIntegritySignature(obj,raw));}}catch(e){}}); if(!sigs.length) return null; sigs.sort((a,b)=>{const aq=(Number(a.dayCount)||0)*100000+(Number(a.adaya?.progressed)||0)*1000+(Number(a.azure?.meaningScore)||0)+(Number(a.presentDomainCount)||0)*100; const bq=(Number(b.dayCount)||0)*100000+(Number(b.adaya?.progressed)||0)*1000+(Number(b.azure?.meaningScore)||0)+(Number(b.presentDomainCount)||0)*100; return bq-aq;}); return sigs[0];}catch(e){return null}
-}
-function backupShrinkRisk(candidateSig, baselineSig){
-  const warnings=[]; let blocked=false;
-  try{ const c=candidateSig||{}, b=baselineSig||null; if(c.backupType==='Recovery'){warnings.push('This is a recovery snapshot, not a full backup.'); blocked=true;} const missingDomains=Object.entries(c.domains||{}).filter(([k,v])=>!v).map(([k])=>k); if(missingDomains.length){warnings.push('Missing global domains: '+missingDomains.join(', ')); if(missingDomains.length>=2) blocked=true;} if(b&&(Number(b.dayCount)||0)>=7){const baseDays=Number(b.dayCount)||0, candDays=Number(c.dayCount)||0; if(candDays<Math.max(1,Math.floor(baseDays*.75))||baseDays-candDays>=5){warnings.push(`History shrink detected: ${candDays} days vs last good ${baseDays} days.`); blocked=true;} const bo=dateKeyToTime(b.oldestDay), co=dateKeyToTime(c.oldestDay); if(bo&&co&&co-bo>3*86400000){warnings.push(`Oldest day jumped forward: ${c.oldestDay||'none'} vs ${b.oldestDay}.`); blocked=true;} const bAz=Number(b.azure?.meaningScore)||0, cAz=Number(c.azure?.meaningScore)||0; if(bAz>=20&&cAz<Math.max(5,bAz*.55)){warnings.push('Azure proof appears reduced/reset compared with last good backup.'); blocked=true;} const bAdaya=Number(b.adaya?.progressed)||0, cAdaya=Number(c.adaya?.progressed)||0; if(bAdaya>=5&&cAdaya<Math.max(1,Math.floor(bAdaya*.7))){warnings.push('Adaya skills appear reduced/reset compared with last good backup.'); blocked=true;} const bTotal=Number(b.adaya?.total)||0, cTotal=Number(c.adaya?.total)||0; if(bTotal>=10&&cTotal<Math.floor(bTotal*.75)){warnings.push('Adaya skill map is smaller than last good backup.'); blocked=true;}} }catch(e){warnings.push('Backup integrity check failed; treating as unsafe.'); blocked=true;} return {blocked,warnings,backupType:blocked?'Partial / blocked':'Full'};
-}
-function mergeWithHistoryBaselineIfNeeded(incomingState, baselineState, reason='write'){
-  try{
-    if(!incomingState||!baselineState) return incomingState;
-    const baseSig=backupIntegritySignature(baselineState);
-    const inSig=backupIntegritySignature(incomingState);
-    const risk=backupShrinkRisk(inSig,baseSig);
-    if(!risk.blocked) return incomingState;
-    const merged=mergeStatesNewestWins(baselineState,incomingState);
-    const mergedSig=backupIntegritySignature(merged);
-    // Hard domain floor: if the candidate looks like a short/recovery reset, preserve the richer known-good domains.
-    if((baseSig.azure?.meaningScore||0)>(mergedSig.azure?.meaningScore||0)) merged.azure=deepClone(baselineState.azure||merged.azure||{});
-    if((baseSig.adaya?.progressed||0)>(mergedSig.adaya?.progressed||0)) merged.adaya=deepClone(baselineState.adaya||merged.adaya||{});
-    ['money','faith','learning','weeklyAnchors'].forEach(domain=>{
-      try{if(domainMeaningScore(baselineState,domain)>domainMeaningScore(merged,domain)) merged[domain]=deepClone(baselineState[domain]||merged[domain]);}catch(e){}
-    });
-    merged._backupIntegrity=merged._backupIntegrity||{};
-    merged._backupIntegrity.lastGuardAt=new Date().toISOString();
-    merged._backupIntegrity.lastGuardReason=reason;
-    merged._backupIntegrity.lastGuardWarnings=risk.warnings;
-    return migrate(merged);
-  }catch(e){return incomingState}
-}
-function guardRawAgainstHistoryShrinkForWrite(raw){
-  try{ if(allowIntentionalRollbackWrite) return String(raw||'{}'); const incoming=parseStateRaw(String(raw||'{}')); if(!incoming) return String(raw||'{}'); const baselines=[]; const pushRaw=r=>{try{if(r){const obj=parseStateRaw(r); if(obj&&!obj._tlccCriticalRecovery) baselines.push(obj);}}catch(e){}}; try{pushRaw(localStorage.getItem(LS_KEY));}catch(e){} try{pushRaw(localStorage.getItem(STATE_LAST_GOOD_KEY));}catch(e){} try{pushRaw(localStorage.getItem(STATE_BACKUP_KEY));}catch(e){} if(!baselines.length) return String(raw||'{}'); baselines.sort((a,b)=>(backupIntegritySignature(b).dayCount-backupIntegritySignature(a).dayCount)||((backupIntegritySignature(b).azure?.meaningScore||0)-(backupIntegritySignature(a).azure?.meaningScore||0))); const protectedState=mergeWithHistoryBaselineIfNeeded(incoming,baselines[0],'primary-save'); if(protectedState!==incoming) return JSON.stringify(stateForStorage(protectedState)); }catch(e){} return String(raw||'{}');
-}
-function promoteLastGoodBackupRaw(raw, reason='save'){
-  try{ if(!raw) return false; const incoming=parseStateRaw(raw); if(!incoming||incoming._tlccCriticalRecovery) return false; const sig=backupIntegritySignature(incoming,raw); let existingRaw=null; try{existingRaw=localStorage.getItem(STATE_LAST_GOOD_KEY);}catch(e){} const existing=existingRaw?parseStateRaw(existingRaw):null; const baseSig=existing?backupIntegritySignature(existing,existingRaw):null; const risk=backupShrinkRisk(sig,baseSig); if(risk.blocked) return false; const existingRank=baseSig?((Number(baseSig.dayCount)||0)*100000+(Number(baseSig.adaya?.progressed)||0)*1000+(Number(baseSig.azure?.meaningScore)||0)):0; const incomingRank=(Number(sig.dayCount)||0)*100000+(Number(sig.adaya?.progressed)||0)*1000+(Number(sig.azure?.meaningScore)||0); const incomingNewer=(stateAntiRollbackStamp(incoming)||0)>=(existing?stateAntiRollbackStamp(existing):0); if(!existing||incomingRank>=existingRank||incomingNewer){try{localStorage.setItem(STATE_LAST_GOOD_KEY,String(raw));}catch(e){} try{sessionStorage.setItem(STATE_BACKUP_KEY,String(raw));}catch(e){} try{state._backupIntegrity=state._backupIntegrity||{}; state._backupIntegrity.lastFullSignature=sig; state._backupIntegrity.lastFullConfirmedAt=new Date().toISOString(); state._backupIntegrity.lastFullReason=reason;}catch(e){} return true;} }catch(e){} return false;
-}
-function annotateBackupIntegrity(backup){
-  try{ const raw=JSON.stringify(backup||{}); const sig=backupIntegritySignature(backup,raw); const base=betterBackupBaselineSignature(); const risk=backupShrinkRisk(sig,base); backup._export=backup._export||{}; backup._export.backupIntegrity={...sig,backupType:risk.backupType,warnings:risk.warnings,lastKnownGood:base?{dayCount:base.dayCount,oldestDay:base.oldestDay,newestDay:base.newestDay,azureMeaningScore:base.azure?.meaningScore||0,adayaProgressed:base.adaya?.progressed||0}:null}; return {backup,sig,risk,baseline:base}; }catch(e){return {backup,risk:{blocked:true,warnings:['Backup integrity annotation failed.'],backupType:'Partial / blocked'},baseline:null}}
-}
-function guardFullBackupExportCandidate(backup, opts={}){ const checked=annotateBackupIntegrity(backup); if(checked.risk?.blocked&&!opts.allowPartial){return {ok:false,backup:checked.backup,reason:(checked.risk.warnings||[]).join('\n')||'Backup integrity guard blocked a shortened backup.',checked};} return {ok:true,backup:checked.backup,checked}; }
-function rememberSuccessfulFullBackup(backup, reason='export'){ try{const clean=deepClone(backup||state); if(clean._export) delete clean._export; promoteLastGoodBackupRaw(JSON.stringify(stateForStorage(clean)),reason);}catch(e){} }
-function backupHealthHtml(){
-  try{const sig=backupIntegritySignature(state); const base=betterBackupBaselineSignature(); const risk=backupShrinkRisk(sig,base); const cls=risk.blocked?'bad':(risk.warnings&&risk.warnings.length?'warn':''); const range=sig.dayCount?`${esc(sig.oldestDay)} → ${esc(sig.newestDay)}`:'No saved days yet'; const type=risk.blocked?'Partial / Recovery risk':'Full'; const size=sig.sizeBytes?`${Math.round(sig.sizeBytes/1024)} KB`:'—'; const domains=Object.entries(sig.domains||{}).filter(([k,v])=>v).map(([k])=>k).join(', ')||'none'; const warn=(risk.warnings||[]).length?`<div class="tiny" style="margin-top:7px;color:var(--gold)">${risk.warnings.map(esc).join('<br>')}</div>`:`<div class="tiny" style="margin-top:7px;color:var(--green)">Full Backup health looks safe. History should not silently shrink.</div>`; return `<div class="backupHealth ${cls}"><b>Backup Health</b><div class="backupHealthGrid"><div class="backupHealthItem"><b>Days saved</b><span>${sig.dayCount}</span></div><div class="backupHealthItem"><b>Date range</b><span>${range}</span></div><div class="backupHealthItem"><b>Backup type</b><span>${type}</span></div><div class="backupHealthItem"><b>Size estimate</b><span>${size}</span></div></div><div class="tiny" style="margin-top:7px">Domains present: ${esc(domains)}. Azure proof score: ${Number(sig.azure?.meaningScore)||0}. Adaya progressed skills: ${Number(sig.adaya?.progressed)||0}.</div>${warn}</div>`;}catch(e){return `<div class="backupHealth bad"><b>Backup Health</b><div class="tiny">Unable to read backup health. Export cautiously.</div></div>`}
-}
 function scheduleAutoBackupDownload(){
   try{
     if(!autoBackupEnabled()) return;
@@ -963,13 +900,14 @@ async function downloadBackupNow(source='manual'){
     state.settings.autoBackupDueAt=null;
     state.settings.autoBackupDueReason=null;
     if(!isManual) state.settings.autoBackupPromptCooldownUntil=new Date(now.getTime()+autoBackupIntervalMs()).toISOString();
-    try{rememberSuccessfulFullBackup(guarded.backup, isManual?'manual-export':'auto-export');}catch(e){}
+    try{rememberSuccessfulFullBackup(guarded.backup,isManual?'manual-export':'auto-export');}catch(e){}
     writeSavedState();
     setExportProgress(92,'Starting download...');
     await exportSleep(25);
     downloadTextFile(raw,name,'application/json');
     finishExportProgress(`Backup export started: ${name}.`);
     updateSaveStatus();
+    try{if(active==='data') setTimeout(()=>render(),80);}catch(e){}
   }catch(e){
     failExportProgress('Backup export failed.');
     alert('Backup export failed: '+(e?.message||e));
@@ -1683,7 +1621,6 @@ function mergeStatesWithoutRollback(current,incoming){
 function guardRawAgainstRollbackForWrite(raw){
   try{
     if(allowIntentionalRollbackWrite) return String(raw||'{}');
-    raw=guardRawAgainstHistoryShrinkForWrite(String(raw||'{}'));
     const incoming=parseStateRaw(String(raw||'{}'));
     let existingRaw=null;
     try{existingRaw=localStorage.getItem(LS_KEY);}catch(e){}
@@ -1871,16 +1808,8 @@ function flushSecondaryStorageWrites(){
   }catch(e){}
 }
 function writeCompactSavedRaw(compactRaw){
-  const originalRaw=String(compactRaw||'{}');
-  compactRaw=guardRawAgainstRollbackForWrite(originalRaw);
-  if(compactRaw!==originalRaw && !allowIntentionalRollbackWrite){
-    try{
-      state=migrate(JSON.parse(compactRaw));
-      sanitizeGuideStateAfterCompletion(state.settings||{});
-      guideState=state.settings?.guideState||null;
-      inputUpdatedStampCacheReady=false;
-    }catch(e){}
-  }
+  compactRaw=guardRawAgainstRollbackForWrite(String(compactRaw||'{}'));
+  compactRaw=guardRawAgainstHistoryShrinkForWrite(compactRaw);
   // Keep the durable primary save immediate, but defer duplicate backups/caches.
   try{localStorage.setItem(LS_KEY, compactRaw);}catch(e){}
   const recoveryNow=needsImmediateTabRecoveryWrite();
@@ -1948,7 +1877,6 @@ function migrate(s){
   if(!s.adaya) s.adaya={skills:{},customSkills:[],weekly:{}};
   if(!s.settings) s.settings={};
   if(!s._domainUpdatedAt || typeof s._domainUpdatedAt!=='object' || Array.isArray(s._domainUpdatedAt)) s._domainUpdatedAt={};
-  if(!s._backupIntegrity || typeof s._backupIntegrity!=='object' || Array.isArray(s._backupIntegrity)) s._backupIntegrity={};
   try{repairAzureCanonicalState(s,{stamp:false});}catch(e){}
   s.theme='dark'; s.settings.themeLocked='dark';
   s.settings.timeZone=APP_TIME_ZONE;
@@ -2204,7 +2132,7 @@ function prepStateForSave(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v288-backup-integrity-guard';
+  state._schemaVersion='v287-anti-rollback-fix';
   try{markExpiredForecastActions();}catch(e){}
   try{
     const nowMs=Date.now();
@@ -2231,7 +2159,7 @@ function save(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion='v288-backup-integrity-guard';
+  state._schemaVersion='v287-anti-rollback-fix';
   try{
     const k=todayKey();
     if(state.days?.[k]){
@@ -13555,13 +13483,199 @@ function storageStatusHtml(){
   const label=localOk&&!local?'active + father/Adaya vault':(sessionOk||local?'volatile / same-tab fallback':'blocked');
   return `<div class="storageStatus ${cls}"><b>Cache:</b> ${esc(label)}<br><span class="tiny">${esc(msg)}</span></div>`;
 }
+
+function backupDayKeys(s){
+  try{return Object.keys(s?.days||{}).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();}catch(e){return []}
+}
+function backupByteEstimate(rawOrObj){
+  try{if(typeof rawOrObj==='string') return (new TextEncoder().encode(rawOrObj)).length; return (new TextEncoder().encode(JSON.stringify(rawOrObj||{}))).length;}catch(e){try{return JSON.stringify(rawOrObj||'').length}catch(_){return 0}}
+}
+function backupDomainPresence(s){
+  s=s||{};
+  return {azure:!!(s.azure&&typeof s.azure==='object'),adaya:!!(s.adaya&&typeof s.adaya==='object'),money:!!(s.money&&typeof s.money==='object'),faith:!!(s.faith&&typeof s.faith==='object'),learning:!!(s.learning&&typeof s.learning==='object'),settings:!!(s.settings&&typeof s.settings==='object')};
+}
+function adayaSkillBackupSignature(s){
+  try{const vals=Object.values(s?.adaya?.skills||{}); return {total:vals.length,progressed:vals.filter(v=>{try{return normalizeAdayaStage(v)!=='Not Introduced'}catch(e){return !!v}}).length,custom:Array.isArray(s?.adaya?.customSkills)?s.adaya.customSkills.length:0};}catch(e){return {total:0,progressed:0,custom:0}}
+}
+function azureProofBackupSignature(s){
+  try{const az=s?.azure||{}, proof=az.proof||{}, skills=az.skills||{}; return {present:!!az,currentSkill:proof.currentSkill||'',proofQueue:Array.isArray(proof.proofQueue)?proof.proofQueue.length:0,proofLog:Array.isArray(proof.proofLog)?proof.proofLog.length:0,weakTopics:Array.isArray(proof.weakTopics)?proof.weakTopics.length:0,progressedSkills:Object.values(skills).filter(v=>azureProofStageIndexSafe(azureStageFromSkillStatusSafe(v))>0).length,meaningScore:azureDomainMeaningScore(s)};}catch(e){return {present:false,currentSkill:'',proofQueue:0,proofLog:0,weakTopics:0,progressedSkills:0,meaningScore:0}}
+}
+function backupIntegritySignature(s, raw){
+  try{
+    s=s||{};
+    const days=backupDayKeys(s);
+    const sourceRecovery=!!s._tlccCriticalRecovery;
+    const sig={dayCount:days.length,oldestDay:days[0]||null,newestDay:days[days.length-1]||null,sizeBytes:backupByteEstimate(raw||stateForStorage(s)),sourceRecovery,backupType:sourceRecovery?'Recovery source':'Full candidate',domains:backupDomainPresence(s),azure:azureProofBackupSignature(s),adaya:adayaSkillBackupSignature(s),inputUpdatedAt:s._inputUpdatedAt||s._lastMeaningfulInputAt||null,antiRollbackStamp:stateAntiRollbackStamp(s)||0};
+    sig.presentDomainCount=Object.values(sig.domains).filter(Boolean).length;
+    return sig;
+  }catch(e){return {dayCount:0,oldestDay:null,newestDay:null,sizeBytes:0,sourceRecovery:false,backupType:'Partial',domains:{},azure:{meaningScore:0,progressedSkills:0,proofQueue:0,proofLog:0},adaya:{total:0,progressed:0,custom:0},presentDomainCount:0,inputUpdatedAt:null,antiRollbackStamp:0}}
+}
+function dateKeyToTime(k){try{return k?new Date(String(k)+'T12:00:00').getTime():0}catch(e){return 0}}
+function requiredBackupDomainsPresent(sig){
+  try{const d=sig?.domains||{}; return ['azure','adaya','money','faith','learning','settings'].every(k=>!!d[k]);}catch(e){return false}
+}
+function backupLooksLikeCompleteFullState(sig, baselineSig){
+  try{
+    const c=sig||{}, b=baselineSig||null;
+    if((Number(c.dayCount)||0)<1) return false;
+    if(!requiredBackupDomainsPresent(c)) return false;
+    if(b&&(Number(b.dayCount)||0)>=7){
+      const baseDays=Number(b.dayCount)||0, candDays=Number(c.dayCount)||0;
+      if(candDays<Math.max(1,Math.floor(baseDays*.75))||baseDays-candDays>=5) return false;
+      const bo=dateKeyToTime(b.oldestDay), co=dateKeyToTime(c.oldestDay);
+      if(bo&&co&&co-bo>3*86400000) return false;
+      const bAz=Number(b.azure?.meaningScore)||0, cAz=Number(c.azure?.meaningScore)||0;
+      if(bAz>=20&&cAz<Math.max(5,bAz*.55)) return false;
+      const bAdaya=Number(b.adaya?.progressed)||0, cAdaya=Number(c.adaya?.progressed)||0;
+      if(bAdaya>=5&&cAdaya<Math.max(1,Math.floor(bAdaya*.7))) return false;
+      const bTotal=Number(b.adaya?.total)||0, cTotal=Number(c.adaya?.total)||0;
+      if(bTotal>=10&&cTotal<Math.floor(bTotal*.75)) return false;
+    }
+    return true;
+  }catch(e){return false}
+}
+function clearRecoverySnapshotMarkers(obj){
+  try{ if(obj&&typeof obj==='object'){ delete obj._tlccCriticalRecovery; delete obj._tlccRecoveryOnly; delete obj._criticalRecovery; }}catch(e){}
+  return obj;
+}
+function betterBackupBaselineSignature(){
+  try{
+    const sigs=[];
+    const pushSig=sig=>{if(sig&&typeof sig==='object'&&Number(sig.dayCount)>=0)sigs.push(sig)};
+    pushSig(state?._backupIntegrity?.lastFullSignature);
+    const raws=[];
+    try{raws.push(localStorage.getItem(STATE_LAST_GOOD_KEY));}catch(e){}
+    try{raws.push(localStorage.getItem(LS_KEY));}catch(e){}
+    try{raws.push(localStorage.getItem(STATE_BACKUP_KEY));}catch(e){}
+    raws.forEach(raw=>{try{if(raw){const obj=JSON.parse(raw); if(obj&&!obj._tlccCriticalRecovery) pushSig(backupIntegritySignature(obj,raw));}}catch(e){}});
+    if(!sigs.length) return null;
+    sigs.sort((a,b)=>{const aq=(Number(a.dayCount)||0)*100000+(Number(a.adaya?.progressed)||0)*1000+(Number(a.azure?.meaningScore)||0)+(Number(a.presentDomainCount)||0)*100; const bq=(Number(b.dayCount)||0)*100000+(Number(b.adaya?.progressed)||0)*1000+(Number(b.azure?.meaningScore)||0)+(Number(b.presentDomainCount)||0)*100; return bq-aq;});
+    return sigs[0];
+  }catch(e){return null}
+}
+function backupShrinkRisk(candidateSig, baselineSig){
+  const warnings=[]; let blocked=false;
+  try{
+    const c=candidateSig||{}, b=baselineSig||null;
+    const missingDomains=Object.entries(c.domains||{}).filter(([k,v])=>!v).map(([k])=>k);
+    const completeFull=backupLooksLikeCompleteFullState(c,b);
+    if(c.sourceRecovery&&!completeFull){warnings.push('This is a recovery snapshot, not a full backup.'); blocked=true;}
+    if(missingDomains.length){warnings.push('Missing global domains: '+missingDomains.join(', ')); if(missingDomains.length>=2) blocked=true;}
+    if(b&&(Number(b.dayCount)||0)>=7){
+      const baseDays=Number(b.dayCount)||0, candDays=Number(c.dayCount)||0;
+      if(candDays<Math.max(1,Math.floor(baseDays*.75))||baseDays-candDays>=5){warnings.push(`History shrink detected: ${candDays} days vs last good ${baseDays} days.`); blocked=true;}
+      const bo=dateKeyToTime(b.oldestDay), co=dateKeyToTime(c.oldestDay);
+      if(bo&&co&&co-bo>3*86400000){warnings.push(`Oldest day jumped forward: ${c.oldestDay||'none'} vs ${b.oldestDay}.`); blocked=true;}
+      const bAz=Number(b.azure?.meaningScore)||0, cAz=Number(c.azure?.meaningScore)||0;
+      if(bAz>=20&&cAz<Math.max(5,bAz*.55)){warnings.push('Azure proof appears reduced/reset compared with last good backup.'); blocked=true;}
+      const bAdaya=Number(b.adaya?.progressed)||0, cAdaya=Number(c.adaya?.progressed)||0;
+      if(bAdaya>=5&&cAdaya<Math.max(1,Math.floor(bAdaya*.7))){warnings.push('Adaya skills appear reduced/reset compared with last good backup.'); blocked=true;}
+      const bTotal=Number(b.adaya?.total)||0, cTotal=Number(c.adaya?.total)||0;
+      if(bTotal>=10&&cTotal<Math.floor(bTotal*.75)){warnings.push('Adaya skill map is smaller than last good backup.'); blocked=true;}
+    }
+  }catch(e){warnings.push('Backup integrity check failed; treating as unsafe.'); blocked=true;}
+  return {blocked,warnings,backupType:blocked?'Partial / blocked':'Full / Guarded'};
+}
+function guardRawAgainstHistoryShrinkForWrite(raw){
+  try{
+    if(allowIntentionalRollbackWrite) return String(raw||'{}');
+    const incoming=parseStateRaw(String(raw||'{}'));
+    if(!incoming) return String(raw||'{}');
+    const baselines=[];
+    const pushRaw=r=>{try{if(r){const obj=parseStateRaw(r); if(obj&&!obj._tlccCriticalRecovery) baselines.push(obj);}}catch(e){}};
+    try{pushRaw(localStorage.getItem(LS_KEY));}catch(e){}
+    try{pushRaw(localStorage.getItem(STATE_LAST_GOOD_KEY));}catch(e){}
+    try{pushRaw(localStorage.getItem(STATE_BACKUP_KEY));}catch(e){}
+    if(!baselines.length) return String(raw||'{}');
+    baselines.sort((a,b)=>(backupIntegritySignature(b).dayCount-backupIntegritySignature(a).dayCount)||((backupIntegritySignature(b).azure?.meaningScore||0)-(backupIntegritySignature(a).azure?.meaningScore||0)));
+    const base=baselines[0];
+    const risk=backupShrinkRisk(backupIntegritySignature(incoming),backupIntegritySignature(base));
+    if(!risk.blocked) return String(raw||'{}');
+    const merged=mergeStatesNewestWins(base,incoming);
+    merged._backupIntegrity=merged._backupIntegrity||{};
+    merged._backupIntegrity.lastGuardAt=new Date().toISOString();
+    merged._backupIntegrity.lastGuardWarnings=risk.warnings;
+    return JSON.stringify(stateForStorage(merged));
+  }catch(e){return String(raw||'{}')}
+}
+function promoteLastGoodBackupRaw(raw, reason='save'){
+  try{
+    if(!raw) return false;
+    const incoming=parseStateRaw(raw);
+    if(!incoming) return false;
+    const clean=clearRecoverySnapshotMarkers(deepClone(incoming));
+    const cleanRaw=JSON.stringify(stateForStorage(clean));
+    const sig=backupIntegritySignature(clean,cleanRaw);
+    let existingRaw=null; try{existingRaw=localStorage.getItem(STATE_LAST_GOOD_KEY);}catch(e){}
+    const existing=existingRaw?parseStateRaw(existingRaw):null;
+    const baseSig=existing?backupIntegritySignature(existing,existingRaw):null;
+    const risk=backupShrinkRisk(sig,baseSig);
+    if(risk.blocked) return false;
+    const existingRank=baseSig?((Number(baseSig.dayCount)||0)*100000+(Number(baseSig.adaya?.progressed)||0)*1000+(Number(baseSig.azure?.meaningScore)||0)):0;
+    const incomingRank=(Number(sig.dayCount)||0)*100000+(Number(sig.adaya?.progressed)||0)*1000+(Number(sig.azure?.meaningScore)||0);
+    const incomingNewer=(stateAntiRollbackStamp(clean)||0)>=(existing?stateAntiRollbackStamp(existing):0);
+    if(!existing||incomingRank>=existingRank||incomingNewer){
+      try{localStorage.setItem(STATE_LAST_GOOD_KEY,cleanRaw);}catch(e){}
+      try{sessionStorage.setItem(STATE_BACKUP_KEY,cleanRaw);}catch(e){}
+      state._backupIntegrity=state._backupIntegrity||{};
+      state._backupIntegrity.lastFullSignature=sig;
+      state._backupIntegrity.lastFullConfirmedAt=new Date().toISOString();
+      state._backupIntegrity.lastFullReason=reason;
+      state._backupIntegrity.lastFullWarnings=[];
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+function annotateBackupIntegrity(backup){
+  try{const raw=JSON.stringify(backup||{}); const sig=backupIntegritySignature(backup,raw); const base=betterBackupBaselineSignature(); const risk=backupShrinkRisk(sig,base); backup._export=backup._export||{}; backup._export.backupIntegrity={...sig,backupType:risk.backupType,warnings:risk.warnings,lastKnownGood:base?{dayCount:base.dayCount,oldestDay:base.oldestDay,newestDay:base.newestDay,azureMeaningScore:base.azure?.meaningScore||0,adayaProgressed:base.adaya?.progressed||0}:null}; return {backup,sig,risk,baseline:base};}catch(e){return {backup,risk:{blocked:true,warnings:['Backup integrity annotation failed.'],backupType:'Partial / blocked'},baseline:null}}
+}
+function guardFullBackupExportCandidate(backup, opts={}){
+  let checked=annotateBackupIntegrity(backup);
+  if(checked.risk?.blocked&&!opts.allowPartial){return {ok:false,backup:checked.backup,reason:(checked.risk.warnings||[]).join('\n')||'Backup integrity guard blocked a shortened backup.',checked};}
+  clearRecoverySnapshotMarkers(checked.backup);
+  checked=annotateBackupIntegrity(checked.backup);
+  return {ok:true,backup:checked.backup,checked};
+}
+function rememberSuccessfulFullBackup(backup, reason='export'){
+  try{
+    const clean=clearRecoverySnapshotMarkers(deepClone(backup||state));
+    if(clean._export) delete clean._export;
+    const ok=promoteLastGoodBackupRaw(JSON.stringify(stateForStorage(clean)),reason);
+    if(ok){
+      clearRecoverySnapshotMarkers(state);
+      state._backupIntegrity=state._backupIntegrity||{};
+      state._backupIntegrity.lastFullConfirmedAt=state._backupIntegrity.lastFullConfirmedAt||new Date().toISOString();
+      state._backupIntegrity.lastFullReason=reason;
+    }
+    return ok;
+  }catch(e){return false}
+}
+function backupSignatureCovers(currentSig, trustedSig){
+  try{ if(!currentSig||!trustedSig) return false; if((Number(currentSig.dayCount)||0)<(Number(trustedSig.dayCount)||0)) return false; const co=dateKeyToTime(currentSig.oldestDay), to=dateKeyToTime(trustedSig.oldestDay); if(co&&to&&co>to) return false; if((Number(currentSig.azure?.meaningScore)||0)<(Number(trustedSig.azure?.meaningScore)||0)) return false; if((Number(currentSig.adaya?.progressed)||0)<(Number(trustedSig.adaya?.progressed)||0)) return false; return true;}catch(e){return false}
+}
+function backupHealthHtml(){
+  try{
+    const sig=backupIntegritySignature(state);
+    const base=betterBackupBaselineSignature();
+    const risk=backupShrinkRisk(sig,base);
+    const trusted=state?._backupIntegrity?.lastFullSignature||base;
+    const verified=!risk.blocked && backupSignatureCovers(sig,trusted);
+    const cls=risk.blocked?'bad':(risk.warnings&&risk.warnings.length?'warn':'good');
+    const range=sig.dayCount?`${esc(sig.oldestDay)} → ${esc(sig.newestDay)}`:'No saved days yet';
+    const type=risk.blocked?'Partial / Recovery risk':'Full / Guarded';
+    const size=sig.sizeBytes?`${Math.round(sig.sizeBytes/1024)} KB`:'—';
+    const domains=Object.entries(sig.domains||{}).filter(([k,v])=>v).map(([k])=>k).join(', ')||'none';
+    const msg=(risk.warnings||[]).length?`<div class="tiny" style="margin-top:7px;color:var(--gold)">${risk.warnings.map(esc).join('<br>')}</div>`:`<div class="tiny" style="margin-top:7px;color:var(--green)">${verified?'Full backup verified. History guard active.':'Full backup candidate looks safe. Export Full Backup JSON to verify baseline.'}</div>`;
+    return `<div class="backupHealth ${cls}"><b>Backup Health</b><div class="backupHealthGrid"><div class="backupHealthItem"><b>Days saved</b><span>${sig.dayCount}</span></div><div class="backupHealthItem"><b>Date range</b><span>${range}</span></div><div class="backupHealthItem"><b>Backup type</b><span>${type}</span></div><div class="backupHealthItem"><b>Size estimate</b><span>${size}</span></div></div><div class="tiny" style="margin-top:7px">Domains present: ${esc(domains)}. Azure proof score: ${Number(sig.azure?.meaningScore)||0}. Adaya progressed skills: ${Number(sig.adaya?.progressed)||0}.</div>${msg}</div>`;
+  }catch(e){return `<div class="backupHealth bad"><b>Backup Health</b><div class="tiny">Unable to read backup health. Export cautiously.</div></div>`}
+}
 function copyBackupJSON(){
   try{commitFocusedField(); commitPendingRangeDrafts('copy-backup',{save:false}); save(true); flushPendingSaveNow('export'); flushSecondaryStorageWrites(); flushDeferredRecoveryWrites();}catch(e){}
-  const backup=buildFullBackupExport();
-  const guarded=guardFullBackupExportCandidate(backup,{source:'copy'});
+  const guarded=guardFullBackupExportCandidate(buildFullBackupExport(),{source:'copy'});
   if(!guarded.ok){alert('Full Backup blocked to prevent silent history shrink. '+guarded.reason); return;}
-  try{rememberSuccessfulFullBackup(guarded.backup,'copy-backup');}catch(e){}
-  const raw=JSON.stringify(guarded.backup);
+  try{rememberSuccessfulFullBackup(guarded.backup,'copy-export'); writeSavedState();}catch(e){}
+  const raw=JSON.stringify(guarded.backup,null,2);
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(raw).then(()=>alert('Backup copied.')).catch(()=>showBackupBox(raw));
   } else {
@@ -13583,7 +13697,6 @@ function applyImportedStateObject(obj){
     state.settings=state.settings||{};
     sanitizeGuideStateAfterCompletion(state.settings);
     guideState=state.settings?.guideState||null;
-    try{promoteLastGoodBackupRaw(JSON.stringify(stateForStorage(state)),'import');}catch(e){}
     save(true);
     flushPendingSaveNow('import');
     flushSecondaryStorageWrites();
