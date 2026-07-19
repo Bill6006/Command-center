@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center v301 Post-Reload Active-State Repair</title>
+<title>Tyree Life Command Center v299 Phase 69A compact forecast summary</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -539,23 +539,6 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 }
 
 </style>
-
-<style id="verified-import-repair-style">
-.verifiedImportOverlay{position:fixed;inset:0;z-index:10000;background:rgba(4,8,14,.86);display:flex;align-items:flex-end;justify-content:center;padding:8px}
-.verifiedImportSheet{width:min(620px,100%);max-height:calc(100dvh - 16px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px 20px 14px 14px;padding:16px;box-shadow:var(--shadow)}
-.verifiedImportHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
-.verifiedImportTitle{font-size:1.08rem;font-weight:950}.verifiedImportStatus{color:var(--muted);font-size:.82rem;line-height:1.4}
-.verifiedImportCompare{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}.verifiedImportPanel{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:10px;min-width:0}
-.verifiedImportPanel h3{margin:0 0 7px;font-size:.74rem}.verifiedImportMetric{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid rgba(128,145,165,.14);font-size:.82rem}.verifiedImportMetric:last-child{border-bottom:0}.verifiedImportMetric b{overflow-wrap:anywhere;text-align:right}
-.verifiedImportResult{border-left:3px solid var(--accent);padding:9px 10px;background:rgba(110,168,254,.07);border-radius:0 12px 12px 0;margin:10px 0;font-size:.84rem;line-height:1.4}
-.verifiedImportActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.verifiedImportActions .btn{min-height:44px}.verifiedImportActions .wide{grid-column:1/-1}
-.verifiedImportProgress{display:grid;gap:7px;margin:12px 0}.verifiedImportStep{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:.84rem}.verifiedImportStep i{width:10px;height:10px;border-radius:50%;background:var(--line);flex:0 0 auto}.verifiedImportStep.active{color:var(--text);font-weight:850}.verifiedImportStep.active i{background:var(--gold)}.verifiedImportStep.done{color:var(--green)}.verifiedImportStep.done i{background:var(--green)}.verifiedImportStep.fail{color:var(--red)}.verifiedImportStep.fail i{background:var(--red)}
-.verifiedImportError{border:1px solid rgba(251,113,133,.45);background:rgba(251,113,133,.08);border-radius:14px;padding:10px;overflow-wrap:anywhere;font-size:.84rem;line-height:1.45}
-.verifiedImportSuccess{border:1px solid rgba(74,222,128,.42);background:rgba(74,222,128,.08);border-radius:14px;padding:12px;line-height:1.45}
-.verifiedImportOrigin{font-size:.74rem;color:var(--muted);overflow-wrap:anywhere;margin-top:9px}
-@media(max-width:520px){.verifiedImportCompare{grid-template-columns:1fr}.verifiedImportSheet{padding:14px}.verifiedImportActions{grid-template-columns:1fr}.verifiedImportActions .wide{grid-column:auto}}
-</style>
-
 </head>
 <body>
 <div class="app" data-theme="dark" id="app">
@@ -867,8 +850,6 @@ function setStoredNightTarget(mode){
 
 const APP_TIME_ZONE = 'America/New_York';
 const APP_TIME_ZONE_LABEL = 'Eastern Time';
-// One schema authority available before the first loadState() call.
-const TLCC_CURRENT_SCHEMA = 'v297-phase68-final-acceptance';
 
 const PHASE66B_CONTEXT_DEFS=[
   {code:'at_work',label:'At work',group:'location'},
@@ -2386,8 +2367,7 @@ function prepStateForSave(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion=TLCC_CURRENT_SCHEMA;
-  state.settings.schemaVersion=TLCC_CURRENT_SCHEMA;
+  state._schemaVersion='v294-phase67B-capacity-budget';
   try{markExpiredForecastActions();}catch(e){}
   try{phase66BPruneExpiredContext(state,new Date(),false);}catch(e){}
   try{
@@ -2415,8 +2395,7 @@ function save(skipSnapshot=false){
   if(!skipSnapshot && shouldCaptureTodaySnapshotNow()) saveSnapshotPending=true;
   const now=new Date().toISOString();
   state._savedAt=now;
-  state._schemaVersion=TLCC_CURRENT_SCHEMA;
-  state.settings.schemaVersion=TLCC_CURRENT_SCHEMA;
+  state._schemaVersion='v294-phase67B-capacity-budget';
   try{
     const k=todayKey();
     if(state.days?.[k]){
@@ -16515,7 +16494,7 @@ function renderData(){
         <button type="button" class="btn" onclick="exportLifeUpdate(30);return false;">Export Life Update for ChatGPT — 30 days</button>
         <button type="button" class="btn" onclick="exportLifeUpdate('all');return false;">Export Life Update for ChatGPT — Full</button>
         <button type="button" class="btn" onclick="exportData();return false;">Export Full Backup JSON</button>
-        <label class="btn small">Import JSON<input type="file" accept=".json" style="display:none" onchange="importData(this.files[0],this)"></label>
+        <label class="btn small">Import JSON<input type="file" accept=".json" style="display:none" onchange="importData(this.files[0])"></label>
         <button type="button" class="btn danger" onclick="resetApp()">Reset App</button>
       </div>
       <h3 style="margin-top:14px">Today Small Wins</h3>
@@ -17692,7 +17671,7 @@ window.__phase67DStyleText='phase67dTri phase67dOverall phase67dDomainGrid @medi
    Diagnostics and integration proof only. No new feature family.
    ============================================================ */
 const PHASE68_VERSION='phase68_final_acceptance_v1';
-const PHASE68_SCHEMA=TLCC_CURRENT_SCHEMA;
+const PHASE68_SCHEMA='v297-phase68-final-acceptance';
 const PHASE68_BUILD_ACCEPTANCE=Object.freeze({"decision":"GREEN","generatedAt":"2026-07-18T18:33:35.218Z","artifact":{"phase":"68","title":"Tyree Life Command Center v297 Phase 68 final intelligence acceptance","sourceArtifact":"Tyree_Life_Command_Center_Phase67D_Maturity_Truth_v1.html","integrationFixes":["Corrected Phase 67D weekly adoption aggregation to use the established weekStartKey runtime owner."]},"tests":{"passed":100,"total":100,"inheritedPassed":87,"inheritedTotal":87,"integrationPassed":13,"integrationTotal":13},"performance":{"bootMs":543.2,"standardRenderMs":192.5,"todayControlMs":17.7,"lifeUpdateMs":11775.4,"level5ReviewMs":15116.4,"stateBytes":29806,"ordinaryRenderDeepReviewBuilds":{"lifeUpdate":0,"level5Review":0}},"mobile":{"widthsPassed":4,"widthsTotal":4,"widths":[375,430,760,1280],"horizontalOverflow":0,"zeroWidthLabels":0,"controlOverlaps":0,"reasonSheetUsable":true,"workWinFormUsable":true,"commandCardReadable":true,"maturityDisplayReadable":true},"limitations":["Physical Android Chrome download behavior was not exercised; mobile Chromium geometry and export generation passed.","The managed test origin required in-memory storage shims; production storage identifiers, migrations, and JSON round-trip preservation passed, but a native browser restart was not available."]});
 function ensurePhase68State(targetState=state){
   targetState.settings=targetState.settings||{};
@@ -17869,19 +17848,12 @@ document.addEventListener('pointerup', handleNightTargetEvent, true);
 document.addEventListener('touchend', handleNightTargetEvent, true);
 document.addEventListener('click', handleNightTargetEvent, true);
 try{navigator.storage && navigator.storage.persist && navigator.storage.persist();}catch(e){}
-const __tlccPendingVerifiedImportBoot=!!window.__tlccVerifiedImportActive||!!window.__tlccVerifiedImportBootPending||!!phaseImportReadPendingMarker();
-window.__tlccVerifiedImportEarlyBootProtected=__tlccPendingVerifiedImportBoot;
-if(!__tlccPendingVerifiedImportBoot){
-  try{syncReentryState({markShown:true,persist:true});}catch(e){}
-  try{resetGuideOnTimeframeChange();}catch(e){}
-  render();
-  hydrateFromIndexedDB();
-}else{
-  window.__tlccVerifiedImportEarlyBootSkipped={syncReentry:true,guideReset:true,render:true,indexedDBHydration:true};
-}
+try{syncReentryState({markShown:true,persist:true});}catch(e){}
+try{resetGuideOnTimeframeChange();}catch(e){}
+render();
+hydrateFromIndexedDB();
 setTimeout(()=>{
   try{
-    if(phaseImportCandidateWouldBeProtected())return;
     if(autoBackupEnabled()){
       const last=state.settings?.autoBackupLastAt ? new Date(state.settings.autoBackupLastAt).getTime() : 0;
       if(!last || Date.now()-last >= autoBackupIntervalMs()) markAutoBackupDue(!last?'open':'interval');
@@ -17890,7 +17862,7 @@ setTimeout(()=>{
     }
   }catch(e){}
 },400);
-setTimeout(()=>{if(!phaseImportCandidateWouldBeProtected())updateSaveStatus()},200);
+setTimeout(updateSaveStatus,200);
 
 
 
@@ -18088,609 +18060,6 @@ function runPhase69ACompactSummaryTests(){
 }
 window.runPhase69ACompactSummaryTests=runPhase69ACompactSummaryTests;
 window.__phase69APresentationVersion=PHASE69A_PRESENTATION_VERSION;
-
-
-/* ============================================================
-   VERIFIED IMPORT RESTORE TRANSACTION REPAIR v1
-   Isolated import/persistence/reload verification only.
-   ============================================================ */
-function phaseImportKey(suffix){return LS_KEY+'_verified_import_'+suffix+'_v1';}
-function phaseImportPendingKey(){return phaseImportKey('pending');}
-function phaseImportRollbackKey(){return phaseImportKey('rollback');}
-function phaseImportInstanceKey(){return phaseImportKey('instance');}
-function phaseImportExactHoldKey(){return phaseImportKey('exact_replace_hold');}
-function phaseImportNow(){return new Date().toISOString();}
-function phaseImportUuid(){
-  try{return crypto.randomUUID()}catch(e){return 'imp_'+Date.now()+'_'+Math.random().toString(36).slice(2)}
-}
-function phaseImportStorageGet(area,key){try{return area.getItem(key)}catch(e){return null}}
-function phaseImportStorageSet(area,key,val){
-  try{area.setItem(key,val);return {ok:true}}catch(e){return {ok:false,error:{name:e?.name||'StorageError',message:e?.message||String(e),quota:/quota/i.test(String(e?.name||'')+' '+String(e?.message||''))}}}
-}
-function phaseImportStorageRemove(area,key){try{area.removeItem(key);return true}catch(e){return false}}
-function phaseImportDocumentInstanceId(){
-  const key=phaseImportInstanceKey();
-  let id=phaseImportStorageGet(localStorage,key);
-  if(!id){id=phaseImportUuid();phaseImportStorageSet(localStorage,key,id)}
-  return id||'unavailable';
-}
-function phaseImportOriginFingerprint(){
-  let estimate=null;
-  try{if(navigator.storage?.estimate) navigator.storage.estimate().then(x=>{window.__tlccLastStorageEstimate=x}).catch(()=>{});estimate=window.__tlccLastStorageEstimate||null}catch(e){}
-  return {
-    href:String(location.href||''),protocol:String(location.protocol||''),origin:String(location.origin||'null'),
-    documentUrl:String(document.URL||''),originIsNull:String(location.origin)==='null',
-    isContent:String(location.protocol)==='content:',isFile:String(location.protocol)==='file:',
-    instanceId:phaseImportDocumentInstanceId(),localStorageAvailable:browserStorageWorks(),
-    indexedDBAvailable:!!window.indexedDB,storageEstimate:estimate
-  };
-}
-function phaseImportReadPendingMarker(){
-  const key=phaseImportPendingKey(); let raw=null;
-  raw=phaseImportStorageGet(localStorage,key)||phaseImportStorageGet(sessionStorage,key);
-  if(!raw){try{raw=history.state?.tlccVerifiedImportPending?JSON.stringify(history.state.tlccVerifiedImportPending):null}catch(e){}}
-  try{return raw?JSON.parse(raw):null}catch(e){return null}
-}
-function phaseImportWritePendingMarker(marker){
-  const raw=JSON.stringify(marker),key=phaseImportPendingKey();
-  const a=phaseImportStorageSet(localStorage,key,raw),b=phaseImportStorageSet(sessionStorage,key,raw);
-  try{history.replaceState(Object.assign({},history.state||{},{tlccVerifiedImportPending:marker}),'',location.href)}catch(e){}
-  if(!a.ok&&!b.ok) throw phaseImportError('Pending verification marker could not be saved.','marker_write',a.error||b.error);
-}
-function phaseImportClearPendingMarker(){
-  const key=phaseImportPendingKey();phaseImportStorageRemove(localStorage,key);phaseImportStorageRemove(sessionStorage,key);
-  try{const h=Object.assign({},history.state||{});delete h.tlccVerifiedImportPending;history.replaceState(h,'',location.href)}catch(e){}
-}
-function phaseImportError(message,stage,cause){
-  const e=new Error(message);e.importStage=stage||'unknown';e.causeDetail=cause||null;return e;
-}
-function phaseImportDeclaredBackupType(s){
-  return s?._export?.backupIntegrity?.backupType||s?._backupIntegrity?.lastFullSignature?.backupType||backupIntegritySignature(s).backupType||'Unknown';
-}
-function phaseImportSignature(s,raw){
-  s=s||{};const base=backupIntegritySignature(s,raw);
-  const declared=s?._backupIntegrity?.verifiedImport?.backupType||phaseImportDeclaredBackupType(s);
-  const azDeclared=s?._export?.backupIntegrity?.azure||s?._backupIntegrity?.lastFullSignature?.azure||null;
-  const adDeclared=s?._export?.backupIntegrity?.adaya||s?._backupIntegrity?.lastFullSignature?.adaya||null;
-  return {
-    dayCount:base.dayCount,oldestDay:base.oldestDay,newestDay:base.newestDay,
-    backupType:declared||base.backupType,sizeBytes:base.sizeBytes,
-    azureScore:Number(azDeclared?.meaningScore??base.azure?.meaningScore??0),
-    azureProofQueue:Number(azDeclared?.proofQueue??base.azure?.proofQueue??0),
-    adayaTotal:Number(adDeclared?.total??base.adaya?.total??0),
-    adayaProgressed:Number(adDeclared?.progressed??base.adaya?.progressed??0),
-    timezone:String(s?.settings?.timeZone||''),rolloverMode:String(s?.settings?.dayRolloverMode||''),
-    schema:String(s?._schemaVersion||''),sourceRecovery:!!base.sourceRecovery,
-    antiRollbackStamp:Number(base.antiRollbackStamp||0)
-  };
-}
-function phaseImportComparableSignature(sig){
-  return {
-    dayCount:Number(sig?.dayCount||0),oldestDay:sig?.oldestDay||null,newestDay:sig?.newestDay||null,
-    azureScore:Number(sig?.azureScore||0),azureProofQueue:Number(sig?.azureProofQueue||0),
-    adayaTotal:Number(sig?.adayaTotal||0),adayaProgressed:Number(sig?.adayaProgressed||0),
-    timezone:String(sig?.timezone||''),rolloverMode:String(sig?.rolloverMode||''),
-    schema:String(sig?.schema||''),sourceRecovery:!!sig?.sourceRecovery,
-    backupType:String(sig?.backupType||''),antiRollbackStamp:Number(sig?.antiRollbackStamp||0)
-  };
-}
-function phaseImportCanonicalizeStateObject(source,options={}){
-  const copy=deepClone(source||{});
-  // loadState() runs before later phase constants are initialized, so pending boot must not call the full migration chain again.
-  const canonical=options.bootSafe?copy:migrate(copy);
-  canonical.settings=canonical.settings||{};
-  canonical._schemaVersion=TLCC_CURRENT_SCHEMA;
-  canonical.settings.schemaVersion=TLCC_CURRENT_SCHEMA;
-  return canonical;
-}
-function phaseImportNormalizeExpectedSignature(sig){
-  const out=Object.assign({},sig||{});
-  out.schema=TLCC_CURRENT_SCHEMA;
-  return out;
-}
-function phaseImportCanonicalSignature(source,raw,options={}){
-  const canonical=phaseImportCanonicalizeStateObject(source,options);
-  const sig=phaseImportSignature(canonical,raw);
-  sig.schema=TLCC_CURRENT_SCHEMA;
-  return sig;
-}
-function phaseImportSignaturesMatch(a,b){
-  return JSON.stringify(phaseImportComparableSignature(a))===JSON.stringify(phaseImportComparableSignature(b));
-}
-function phaseImportSignatureDiff(expected,actual,expectedState=null,actualState=null){
-  const e=phaseImportComparableSignature(phaseImportNormalizeExpectedSignature(expected));
-  const a=phaseImportComparableSignature(actual);
-  const mismatches=[];
-  Object.keys(e).forEach(k=>{if(JSON.stringify(e[k])!==JSON.stringify(a[k]))mismatches.push({field:k,expected:e[k],actual:a[k]})});
-  const eDays=new Set(Object.keys(expectedState?.days||{})),aDays=new Set(Object.keys(actualState?.days||{}));
-  const added=[...aDays].filter(k=>!eDays.has(k)).sort(),removed=[...eDays].filter(k=>!aDays.has(k)).sort();
-  return {mismatches,addedDays:added,removedDays:removed};
-}
-function phaseImportMismatchCause(expected,actual,expectedState=null,actualState=null,extra={}){
-  const diff=phaseImportSignatureDiff(expected,actual,expectedState,actualState);
-  const fields=diff.mismatches.map(x=>`${x.field}: expected ${String(x.expected)}; actual ${String(x.actual)}`);
-  if(diff.addedDays.length)fields.push(`added days: ${diff.addedDays.join(', ')}`);
-  if(diff.removedDays.length)fields.push(`removed days: ${diff.removedDays.join(', ')}`);
-  return Object.assign({name:'SignatureMismatch',message:fields.join(' | ')||'No comparable durable-field mismatch was found.',diff},extra);
-}
-function phaseImportValidateBackupObject(obj,sourceMeta={}){
-  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw phaseImportError('Backup validation failed: root object is missing.','validation');
-  if(!obj.days||typeof obj.days!=='object'||Array.isArray(obj.days))throw phaseImportError('Backup validation failed: days object is missing.','validation');
-  const sig=phaseImportSignature(obj,sourceMeta.rawText||null);
-  const required=['azure','adaya','money','faith','learning','settings'];
-  const missing=required.filter(k=>!obj[k]||typeof obj[k]!=='object');
-  if(missing.length)throw phaseImportError('Backup validation failed: missing domains '+missing.join(', ')+'.','validation');
-  if(!sig.dayCount||!sig.oldestDay||!sig.newestDay)throw phaseImportError('Backup validation failed: no saved-day history was found.','validation');
-  if(sig.sourceRecovery)throw phaseImportError('Backup validation failed: this is a recovery snapshot, not a full backup.','validation');
-  if(!/full/i.test(String(sig.backupType)))throw phaseImportError('Backup validation failed: file is not declared as a full backup.','validation');
-  if(!sig.timezone||!sig.rolloverMode)throw phaseImportError('Backup validation failed: timezone or rollover mode is missing.','validation');
-  return {ok:true,signature:sig,missingDomains:missing,fileName:sourceMeta.fileName||'',fileSize:Number(sourceMeta.fileSize||0),characterCount:Number(sourceMeta.characterCount||0)};
-}
-function phaseImportSummaryHtml(title,sig){
-  return `<div class="verifiedImportPanel"><h3>${esc(title)}</h3>
-    <div class="verifiedImportMetric"><span>Days</span><b>${esc(sig.dayCount)}</b></div>
-    <div class="verifiedImportMetric"><span>Date range</span><b>${esc(sig.oldestDay||'—')} → ${esc(sig.newestDay||'—')}</b></div>
-    <div class="verifiedImportMetric"><span>Azure score</span><b>${esc(sig.azureScore)}</b></div>
-    <div class="verifiedImportMetric"><span>Adaya progressed</span><b>${esc(sig.adayaProgressed)} / ${esc(sig.adayaTotal)}</b></div>
-  </div>`;
-}
-function phaseImportOverlay(html,closable=false){
-  document.getElementById('verifiedImportOverlay')?.remove();
-  const o=document.createElement('div');o.id='verifiedImportOverlay';o.className='verifiedImportOverlay';
-  o.innerHTML=`<div class="verifiedImportSheet" role="dialog" aria-modal="true">${html}</div>`;
-  if(closable)o.addEventListener('click',e=>{if(e.target===o)o.remove()});
-  document.body.appendChild(o);return o;
-}
-function phaseImportCloseOverlay(){document.getElementById('verifiedImportOverlay')?.remove()}
-function phaseImportReadFile(file){
-  return new Promise((resolve,reject)=>{
-    if(!file)return reject(phaseImportError('No backup file was selected.','file_select'));
-    const r=new FileReader();let settled=false;
-    const finish=(fn,val)=>{if(settled)return;settled=true;fn(val)};
-    r.onerror=()=>finish(reject,phaseImportError('File could not be read.','file_read',{name:r.error?.name||'FileReaderError',message:r.error?.message||''}));
-    r.onabort=()=>finish(reject,phaseImportError('Import was cancelled.','file_read',{name:'AbortError',message:'FileReader aborted'}));
-    r.onload=()=>{
-      const result=r.result;
-      if(typeof result!=='string')return finish(reject,phaseImportError('File could not be read as text.','file_read',{resultType:typeof result}));
-      if(!result.length)return finish(reject,phaseImportError('The selected backup file is empty.','file_read'));
-      let encodedBytes=null;try{encodedBytes=new Blob([result]).size}catch(e){}
-      if(Number(file.size||0)>0&&Number.isFinite(encodedBytes)&&encodedBytes!==Number(file.size)){
-        return finish(reject,phaseImportError('File could not be read completely.','file_read',{name:'IncompleteRead',message:`Selected ${file.size} bytes; decoded ${encodedBytes} bytes.`}));
-      }
-      finish(resolve,{text:result,fileName:file.name||'',fileSize:Number(file.size||0),characterCount:result.length,encodedByteCount:encodedBytes,resultType:typeof result,loadCompleted:true});
-    };
-    try{r.readAsText(file)}catch(e){finish(reject,phaseImportError('File could not be read.','file_read',{name:e?.name,message:e?.message}))}
-  });
-}
-function phaseImportClearFileInput(input){
-  try{if(input)input.value=''}catch(e){}
-  try{document.querySelectorAll('input[type=file][accept*=".json"]').forEach(x=>x.value='')}catch(e){}
-}
-function phaseImportCurrentSignature(){return phaseImportSignature(state)}
-function phaseImportExpectedResultSignature(backupSig,mode,currentKey,currentMeaningful){
-  const x=Object.assign({},backupSig);
-  if(mode==='merge'&&currentMeaningful&&currentKey){
-    const keys=new Set(Object.keys(state.days||{}).filter(k=>k===currentKey));
-    if(!Object.prototype.hasOwnProperty.call(state.days||{},currentKey))return x;
-    const all=[...Object.keys(state.days||{}),...Array.from({length:0})];
-    if(currentKey< (x.oldestDay||currentKey))x.oldestDay=currentKey;
-    if(currentKey> (x.newestDay||currentKey))x.newestDay=currentKey;
-    if(!backupSig.__hasCurrentDay)x.dayCount=Number(x.dayCount||0)+1;
-  }
-  return x;
-}
-function phaseImportChooseMode(validation){
-  if(window.__tlccImportAutoChoice)return Promise.resolve(window.__tlccImportAutoChoice);
-  return new Promise(resolve=>{
-    const backupSig=validation.signature,currentSig=phaseImportCurrentSignature(),k=todayKey();
-    const currentMeaningful=!!(state.days?.[k]&&meaningfullyLoggedDay(state.days[k],k));
-    const mergeCount=backupSig.dayCount+((currentMeaningful&&!Object.prototype.hasOwnProperty.call(validation.sourceObject?.days||{},k))?1:0);
-    const mergeOld=backupSig.oldestDay,mergeNew=currentMeaningful&&k>backupSig.newestDay?k:backupSig.newestDay;
-    const overlay=phaseImportOverlay(`<div class="verifiedImportHead"><div><div class="verifiedImportTitle">Restore verified full backup</div><div class="verifiedImportStatus">Choose exactly how the healthy backup should become active.</div></div></div>
-      <div class="verifiedImportCompare">${phaseImportSummaryHtml('Backup',backupSig)}${phaseImportSummaryHtml('Current app',currentSig)}</div>
-      <div class="verifiedImportResult"><b>Replace:</b> ${backupSig.dayCount} days, ${esc(backupSig.oldestDay)} → ${esc(backupSig.newestDay)}.<br>
-      <b>Merge current day:</b> ${mergeCount} days, ${esc(mergeOld)} → ${esc(mergeNew)}. ${currentMeaningful?'The current effective day has meaningful evidence.':'The current effective day is empty/default and will not be preserved.'}</div>
-      <div class="verifiedImportActions"><button class="btn danger" data-choice="replace">Replace</button><button class="btn primary" data-choice="merge">Merge current day</button><button class="btn wide" data-choice="cancel">Cancel</button></div>`);
-    overlay.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{const v=b.dataset.choice;overlay.remove();resolve(v)});
-  });
-}
-function phaseImportProgress(txn,stage,message){
-  txn.phase=stage;txn.status=message||stage;
-  const stages=['reading','validating','preparing','localStorage','indexedDB','recovery','readback','reloading','confirming'];
-  const idx=stages.indexOf(stage);
-  const labels={reading:'Reading file',validating:'Validating backup',preparing:'Preparing restore',localStorage:'Saving to browser',indexedDB:'Saving recovery copy',recovery:'Reconciling recovery sources',readback:'Verifying storage',reloading:'Reloading',confirming:'Confirming restored state'};
-  phaseImportOverlay(`<div class="verifiedImportHead"><div><div class="verifiedImportTitle">Verified backup restore</div><div class="verifiedImportStatus">${esc(message||labels[stage]||stage)}</div></div></div>
-    <div class="verifiedImportProgress">${stages.map((s,i)=>`<div class="verifiedImportStep ${i<idx?'done':i===idx?'active':''}"><i></i><span>${esc(labels[s])}</span></div>`).join('')}</div>
-    <div class="verifiedImportOrigin">Source: ${esc(txn.sourceFilename||'backup file')} · Transaction ${esc(txn.id)}</div>`);
-}
-function phaseImportShowFailure(err,txn,rollbackAvailable){
-  const stage=err?.importStage||txn?.phase||'unknown',detail=err?.causeDetail||err?.cause||null;
-  phaseImportOverlay(`<div class="verifiedImportHead"><div><div class="verifiedImportTitle">Restore failed</div><div class="verifiedImportStatus">Stage: ${esc(stage)}</div></div></div>
-    <div class="verifiedImportError"><b>${esc(err?.message||'Restore failed.')}</b>${detail?`<div class="tiny" style="margin-top:7px">${esc(detail.name||'')} ${esc(detail.message||'')}</div>`:''}</div>
-    <div class="verifiedImportActions">${rollbackAvailable?'<button class="btn primary" onclick="phaseImportRollbackNow()">Return to pre-import state</button>':''}<button class="btn" onclick="phaseImportCloseOverlay()">Close</button></div>`,true);
-}
-function phaseImportSnapshotCurrent(txn){
-  const raw=JSON.stringify(stateForStorage(state));
-  const payload=JSON.stringify({transactionId:txn.id,label:'pre-import damaged/current snapshot',createdAt:phaseImportNow(),raw});
-  const a=phaseImportStorageSet(sessionStorage,phaseImportRollbackKey(),payload);
-  let b={ok:false,error:null};
-  if(!a.ok)b=phaseImportStorageSet(localStorage,phaseImportRollbackKey(),payload);
-  if(!a.ok&&!b.ok)throw phaseImportError('The pre-import rollback snapshot could not be saved.','rollback_snapshot',a.error||b.error);
-  txn.rollbackSnapshotSaved=true;txn.rollbackSnapshotDestination=a.ok?'sessionStorage':'localStorage';return raw;
-}
-function phaseImportReadRollback(){
-  const raw=phaseImportStorageGet(sessionStorage,phaseImportRollbackKey())||phaseImportStorageGet(localStorage,phaseImportRollbackKey());
-  try{return raw?JSON.parse(raw):null}catch(e){return null}
-}
-function phaseImportClearRollback(){phaseImportStorageRemove(sessionStorage,phaseImportRollbackKey());phaseImportStorageRemove(localStorage,phaseImportRollbackKey())}
-function phaseImportRollbackNow(){
-  const snap=phaseImportReadRollback();
-  if(!snap?.raw)return phaseImportShowFailure(phaseImportError('No pre-import rollback snapshot is available.','rollback'),window.__tlccVerifiedImportTxn,false);
-  try{
-    localStorage.setItem(LS_KEY,snap.raw);sessionStorage.setItem(STATE_SESSION_KEY,snap.raw);
-    state=migrate(JSON.parse(snap.raw));window.__tlccVerifiedImportActive=false;phaseImportClearPendingMarker();phaseImportClearRollback();render();phaseImportCloseOverlay();
-  }catch(e){phaseImportShowFailure(phaseImportError('Rollback could not be completed.','rollback',{name:e?.name,message:e?.message}),window.__tlccVerifiedImportTxn,false)}
-}
-function phaseImportSuspendCompetingOwners(txn){
-  window.__tlccVerifiedImportActive=true;window.__tlccVerifiedImportTxn=txn;
-  try{if(autosaveTimer){clearTimeout(autosaveTimer);autosaveTimer=null}}catch(e){}
-  try{if(saveFlushTimer){clearTimeout(saveFlushTimer);saveFlushTimer=null}}catch(e){}
-  try{if(secondaryStorageTimer){clearTimeout(secondaryStorageTimer);secondaryStorageTimer=null;secondaryStorageRaw=null}}catch(e){}
-  try{if(deferredRecoveryTimer){clearTimeout(deferredRecoveryTimer);deferredRecoveryTimer=null;deferredRecoveryRaw=null}}catch(e){}
-}
-function phaseImportReleaseCompetingOwners(){window.__tlccVerifiedImportActive=false}
-function phaseImportBuildCandidate(sourceObj,mode,txn){
-  const rawSource=deepClone(sourceObj);if(rawSource._export)delete rawSource._export;
-  const currentKey=todayKey(),currentDay=state.days?.[currentKey],meaningful=!!(currentDay&&meaningfullyLoggedDay(currentDay,currentKey));
-  const candidate=phaseImportCanonicalizeStateObject(rawSource);
-  if(mode==='merge'&&meaningful)candidate.days[currentKey]=migrateDay(deepClone(currentDay));
-  candidate.settings=candidate.settings||{};
-  candidate._schemaVersion=TLCC_CURRENT_SCHEMA;
-  candidate.settings.schemaVersion=TLCC_CURRENT_SCHEMA;
-  candidate._savedAt=phaseImportNow();
-  candidate._backupIntegrity=candidate._backupIntegrity||{};
-  candidate._backupIntegrity.verifiedImport={transactionId:txn.id,verifiedAt:null,backupType:txn.validation.signature.backupType,sourceRecovery:false,restoreMode:mode};
-  const serialized=JSON.stringify(stateForStorage(candidate));
-  const expected=phaseImportCanonicalSignature(candidate,serialized);
-  expected.backupType=txn.validation.signature.backupType;
-  return {candidate,serialized,expected,currentDayMeaningful:meaningful,currentDayKey:currentKey};
-}
-function phaseImportLocalStorageVerifiedWrite(raw,expected,txn){
-  txn.localStorageResult={startedAt:phaseImportNow(),serializedCharacters:raw.length};
-  let estimate=null;try{estimate=window.__tlccLastStorageEstimate||null}catch(e){}
-  try{localStorage.setItem(LS_KEY,raw)}catch(e){
-    txn.localStorageResult={ok:false,error:{name:e?.name,message:e?.message},quota:/quota/i.test(String(e?.name||'')+' '+String(e?.message||'')),storageEstimate:estimate};
-    throw phaseImportError(txn.localStorageResult.quota?'Browser storage is full.':'Browser storage save failed.','localStorage_write',txn.localStorageResult.error);
-  }
-  const back=localStorage.getItem(LS_KEY);
-  if(!back)throw phaseImportError('Browser storage readback was empty.','localStorage_readback');
-  let obj;try{obj=JSON.parse(back)}catch(e){throw phaseImportError('Browser storage readback was invalid.','localStorage_readback',{name:e?.name,message:e?.message})}
-  const actual=phaseImportCanonicalSignature(obj,back);
-  if(!phaseImportSignaturesMatch(actual,expected))throw phaseImportError('Browser storage readback did not match the restore candidate.','localStorage_readback',phaseImportMismatchCause(expected,actual,null,obj));
-  txn.localStorageResult={ok:true,completedAt:phaseImportNow(),serializedCharacters:raw.length,readbackSignature:actual,storageEstimate:estimate};return actual;
-}
-function phaseImportIdbOpenVerified(){
-  return new Promise((resolve,reject)=>{
-    if(!window.indexedDB)return reject(phaseImportError('IndexedDB is unavailable.','indexedDB_open'));
-    let req;try{req=indexedDB.open(IDB_NAME,1)}catch(e){return reject(phaseImportError('IndexedDB could not be opened.','indexedDB_open',{name:e?.name,message:e?.message}))}
-    req.onupgradeneeded=()=>{try{if(!req.result.objectStoreNames.contains(IDB_STORE))req.result.createObjectStore(IDB_STORE)}catch(e){}};
-    req.onerror=()=>reject(phaseImportError('IndexedDB open failed.','indexedDB_open',{name:req.error?.name,message:req.error?.message}));
-    req.onsuccess=()=>resolve(req.result);
-  });
-}
-async function phaseImportIdbPutVerified(raw){
-  const db=await phaseImportIdbOpenVerified();
-  return await new Promise((resolve,reject)=>{
-    let tx;try{tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(raw,'latest')}catch(e){try{db.close()}catch(_){}
-      return reject(phaseImportError('IndexedDB save failed.','indexedDB_write',{name:e?.name,message:e?.message}))}
-    let requestError=null;
-    tx.onerror=()=>{requestError=tx.error||requestError};
-    tx.onabort=()=>{try{db.close()}catch(_){};reject(phaseImportError('IndexedDB transaction was aborted.','indexedDB_abort',{name:tx.error?.name,message:tx.error?.message}))};
-    tx.oncomplete=()=>{try{db.close()}catch(_){};resolve(true)};
-  });
-}
-async function phaseImportIdbGetVerified(){
-  const db=await phaseImportIdbOpenVerified();
-  return await new Promise((resolve,reject)=>{
-    let tx,req;try{tx=db.transaction(IDB_STORE,'readonly');req=tx.objectStore(IDB_STORE).get('latest')}catch(e){try{db.close()}catch(_){}
-      return reject(phaseImportError('IndexedDB readback failed.','indexedDB_readback',{name:e?.name,message:e?.message}))}
-    req.onerror=()=>{try{db.close()}catch(_){};reject(phaseImportError('IndexedDB readback failed.','indexedDB_readback',{name:req.error?.name,message:req.error?.message}))};
-    req.onsuccess=()=>{const val=req.result||null;try{db.close()}catch(_){};resolve(val)};
-  });
-}
-async function phaseImportIndexedDbVerifiedWrite(raw,expected,txn){
-  txn.indexedDBResult={startedAt:phaseImportNow()};
-  await phaseImportIdbPutVerified(raw);
-  const back=await phaseImportIdbGetVerified();
-  if(!back)throw phaseImportError('IndexedDB readback was empty.','indexedDB_readback');
-  let obj;try{obj=JSON.parse(back)}catch(e){throw phaseImportError('IndexedDB readback was invalid.','indexedDB_readback',{name:e?.name,message:e?.message})}
-  const actual=phaseImportCanonicalSignature(obj,back);
-  if(!phaseImportSignaturesMatch(actual,expected))throw phaseImportError('IndexedDB readback did not match the restore candidate.','indexedDB_readback',phaseImportMismatchCause(expected,actual,null,obj));
-  txn.indexedDBResult={ok:true,completedAt:phaseImportNow(),readbackSignature:actual};return actual;
-}
-function phaseImportClearDayCaches(){
-  [localStorage,sessionStorage].forEach(area=>{try{for(let i=area.length-1;i>=0;i--){const k=area.key(i);if(k&&k.startsWith(DAY_CACHE_PREFIX))area.removeItem(k)}}catch(e){}});
-}
-function phaseImportWriteRecoverySources(raw,candidate,txn,{includeLastGood=false}={}){
-  const writes=[];
-  const put=(area,key,val)=>{const r=phaseImportStorageSet(area,key,val);writes.push({key,ok:r.ok,error:r.error});if(!r.ok)throw phaseImportError('Recovery storage write failed.','recovery_write',r.error)};
-  // Keep at most two full-state copies in localStorage. A third ~2.5 MB duplicate exceeds common mobile/browser quotas.
-  if(includeLastGood){phaseImportStorageRemove(localStorage,STATE_BACKUP_KEY);put(localStorage,STATE_LAST_GOOD_KEY,raw)}
-  else put(localStorage,STATE_BACKUP_KEY,raw);
-  put(sessionStorage,STATE_SESSION_KEY,raw);put(sessionStorage,STATE_BACKUP_KEY,raw);
-  phaseImportClearDayCaches();
-  const currentKey=todayKey();
-  if(candidate.days?.[currentKey]){
-    const dayRaw=JSON.stringify(candidate.days[currentKey]);put(localStorage,DAY_CACHE_PREFIX+currentKey,dayRaw);put(sessionStorage,DAY_CACHE_PREFIX+currentKey,dayRaw);
-  }
-  const old=state;state=candidate;
-  try{
-    const critical=JSON.stringify(buildCriticalRecoveryState()),adaya=JSON.stringify(buildAdayaRecoveryState());
-    put(localStorage,STATE_CRITICAL_KEY,critical);put(sessionStorage,STATE_CRITICAL_KEY,critical);
-    put(localStorage,STATE_CRITICAL_KEY+'_last_good',critical);
-    put(localStorage,ADAYA_RECOVERY_KEY,adaya);put(sessionStorage,ADAYA_RECOVERY_KEY,adaya);
-    put(localStorage,ADAYA_RECOVERY_KEY+'_last_good',adaya);put(sessionStorage,ADAYA_RECOVERY_KEY+'_last_good',adaya);
-  }finally{state=candidate}
-  txn.recoveryWrites=writes;return writes;
-}
-function phaseImportExactHoldActive(k=todayKey()){
-  try{const raw=phaseImportStorageGet(localStorage,phaseImportExactHoldKey());if(!raw)return false;const x=JSON.parse(raw);return !!(x&&x.date===k&&(x.hold===true||x.mode==='replace'||x.mode==='merge_empty'))}catch(e){return false}
-}
-function phaseImportSetExactHold(mode,hold=false){
-  if(hold)phaseImportStorageSet(localStorage,phaseImportExactHoldKey(),JSON.stringify({mode:mode==='merge'?'merge_empty':mode,hold:true,date:todayKey(),at:phaseImportNow()}));
-  else phaseImportStorageRemove(localStorage,phaseImportExactHoldKey());
-}
-function phaseImportReleaseExactHold(){
-  if(!phaseImportExactHoldActive())return;
-  phaseImportStorageRemove(localStorage,phaseImportExactHoldKey());
-  try{window.__tlccImportTransientDay=null}catch(e){}
-}
-function day(){
-  const k=todayKey();
-  if(phaseImportCandidateWouldBeProtected())window.__tlccVerifiedImportDayCalled=true;
-  if(!state.days[k]&&(phaseImportCandidateWouldBeProtected()||phaseImportExactHoldActive(k))){
-    if(!window.__tlccImportTransientDay||window.__tlccImportTransientDayKey!==k){window.__tlccImportTransientDay=defaultDayFromPrevious();window.__tlccImportTransientDayKey=k}
-    return migrateDay(window.__tlccImportTransientDay);
-  }
-  if(!state.days[k])state.days[k]=defaultDayFromPrevious();
-  applyOneTimeDailyCarryFix();
-  return migrateDay(state.days[k]);
-}
-function phaseImportShouldReleaseHoldEvent(){return false}
-function phaseImportMaterializeTransientIfMeaningful(){
-  try{
-    const k=todayKey();
-    if(!phaseImportExactHoldActive(k)||state.days?.[k]||!window.__tlccImportTransientDay)return false;
-    if(!meaningfullyLoggedDay(window.__tlccImportTransientDay,k))return false;
-    state.days[k]=migrateDay(deepClone(window.__tlccImportTransientDay));
-    phaseImportReleaseExactHold();
-    return true;
-  }catch(e){return false}
-}
-
-async function runVerifiedImportTransaction(file,inputEl){
-  if(window.__tlccVerifiedImportActive){phaseImportShowFailure(phaseImportError('Another import transaction is already running.','busy'),window.__tlccVerifiedImportTxn,false);phaseImportClearFileInput(inputEl);return false}
-  const txn={id:phaseImportUuid(),phase:'selected',status:'selected',startedAt:phaseImportNow(),sourceFilename:file?.name||'',sourceFileSize:Number(file?.size||0),sourceCharacterCount:0,selectedRestoreMode:null,expectedIntegritySignature:null,localStorageResult:null,indexedDBResult:null,readbackResults:{},reloadVerificationState:'not_started',originFingerprint:phaseImportOriginFingerprint(),errors:[],warnings:[]};
-  window.__tlccVerifiedImportTxn=txn;
-  try{
-    phaseImportProgress(txn,'reading','Reading the complete backup file.');
-    const read=await phaseImportReadFile(file);txn.sourceCharacterCount=read.characterCount;txn.fileRead=read;
-    phaseImportProgress(txn,'validating','Parsing and validating backup integrity.');
-    let parsed;try{parsed=JSON.parse(read.text)}catch(e){throw phaseImportError('Backup JSON is invalid.','json_parse',{name:e?.name,message:e?.message})}
-    const validation=phaseImportValidateBackupObject(parsed,{rawText:read.text,fileName:read.fileName,fileSize:read.fileSize,characterCount:read.characterCount});
-    validation.sourceObject=parsed;txn.validation=validation;
-    const mode=await phaseImportChooseMode(validation);txn.selectedRestoreMode=mode;
-    if(mode==='cancel'){txn.phase='cancelled';phaseImportCloseOverlay();return false}
-    phaseImportSuspendCompetingOwners(txn);
-    phaseImportProgress(txn,'preparing','Creating a rollback snapshot and the final restore candidate.');
-    phaseImportSnapshotCurrent(txn);
-    const built=phaseImportBuildCandidate(parsed,mode,txn);txn.expectedIntegritySignature=built.expected;txn.candidateMeta=built;
-    phaseImportProgress(txn,'localStorage','Writing and reading back the primary browser state.');
-    try{if(navigator.storage?.estimate)txn.storageEstimate=await navigator.storage.estimate()}catch(e){txn.warnings.push({stage:'storage_estimate',message:e?.message||String(e)})}
-    phaseImportLocalStorageVerifiedWrite(built.serialized,built.expected,txn);
-    phaseImportProgress(txn,'indexedDB','Waiting for IndexedDB transaction completion and readback.');
-    await phaseImportIndexedDbVerifiedWrite(built.serialized,built.expected,txn);
-    phaseImportProgress(txn,'recovery','Replacing stale recovery candidates with the verified restore candidate.');
-    state=built.candidate;phaseImportWriteRecoverySources(built.serialized,built.candidate,txn,{includeLastGood:false});
-    phaseImportSetExactHold(mode,mode==='replace'||!built.currentDayMeaningful);
-    const marker={transactionId:txn.id,expected:built.expected,restoreMode:mode,originFingerprint:txn.originFingerprint,createdAt:phaseImportNow(),sourceFilename:txn.sourceFilename};
-    phaseImportWritePendingMarker(marker);
-    phaseImportProgress(txn,'reloading','Storage readbacks passed. Reloading for final verification.');
-    txn.reloadVerificationState='pending_reload';
-    if(window.__tlccImportTestNoReload){await phaseImportPostReloadVerify(marker);return true}
-    setTimeout(()=>location.reload(),180);
-    return true;
-  }catch(err){
-    txn.errors.push({stage:err?.importStage||txn.phase,message:err?.message||String(err),detail:err?.causeDetail||null});
-    phaseImportReleaseCompetingOwners();
-    phaseImportShowFailure(err,txn,!!txn.rollbackSnapshotSaved);return false;
-  }finally{phaseImportClearFileInput(inputEl)}
-}
-async function importData(file,inputEl){return await runVerifiedImportTransaction(file,inputEl)}
-function importBackupText(){
-  phaseImportShowFailure(phaseImportError('Paste-based restore is disabled for verified imports. Choose the JSON file so file size and reload verification can be recorded.','file_select'),window.__tlccVerifiedImportTxn,false);
-}
-function phaseImportFindExactSyncCandidate(expected){
-  const canonicalExpected=phaseImportNormalizeExpectedSignature(expected);
-  let raw=null;
-  try{raw=localStorage.getItem(LS_KEY)}catch(e){window.__tlccVerifiedImportBootMismatch={stage:'pending_primary_read',error:{name:e?.name,message:e?.message}};return null}
-  if(!raw){window.__tlccVerifiedImportBootMismatch={stage:'pending_primary_missing',expected:canonicalExpected};return null}
-  try{
-    const parsed=JSON.parse(raw),obj=phaseImportCanonicalizeStateObject(parsed,{bootSafe:true}),actual=phaseImportCanonicalSignature(obj,raw,{bootSafe:true});
-    window.__tlccVerifiedImportBootPrimary={raw,parsed,obj,actual};
-    if(phaseImportSignaturesMatch(actual,canonicalExpected)){window.__tlccVerifiedImportExactCandidateSource='localStorage';return obj}
-    window.__tlccVerifiedImportBootMismatch={stage:'pending_primary_signature',expected:canonicalExpected,actual,cause:phaseImportMismatchCause(canonicalExpected,actual,null,obj,{fallbackMergeAttempted:false,dayCalled:!!window.__tlccVerifiedImportDayCalled})};
-  }catch(e){window.__tlccVerifiedImportBootMismatch={stage:'pending_primary_parse',error:{name:e?.name,message:e?.message}}}
-  return null;
-}
-function phaseImportPendingQuarantineState(){
-  const boot=window.__tlccVerifiedImportBootPrimary;
-  if(boot?.obj)return boot.obj;
-  const snap=phaseImportReadRollback();
-  if(snap?.raw){try{return phaseImportCanonicalizeStateObject(JSON.parse(snap.raw),{bootSafe:true})}catch(e){}}
-  const s={seed:SEED,theme:'dark',settings:{timeZone:APP_TIME_ZONE,timeZoneLabel:APP_TIME_ZONE_LABEL,dayRolloverMode:'after_sleep_4am',activeTab:'data'},azure:{skills:{},claims:{}},learning:defaultLearningState(),money:SEED.money,days:{},weeklyAnchors:SEED.weeklyAnchors,logs:[],adaya:{skills:{},customSkills:[],weekly:{}}};
-  SEED.azureSkills.forEach(k=>s.azure.skills[k]='Not Started');SEED.resumeClaims.forEach(c=>s.azure.claims[c.claim]=c.status);
-  return phaseImportCanonicalizeStateObject(s,{bootSafe:true});
-}
-function loadState(){
-  const pending=phaseImportReadPendingMarker();
-  if(pending?.expected){
-    window.__tlccVerifiedImportActive=true;window.__tlccVerifiedImportBootPending=pending;window.__tlccVerifiedImportFallbackAttempted=false;
-    const exact=phaseImportFindExactSyncCandidate(pending.expected);
-    if(exact)return exact;
-    // Fail closed: never admit last-good, session, hash, window.name, or recovery merges during verified-import boot.
-    return phaseImportPendingQuarantineState();
-  }
-  const saved=readSavedRaw();
-  if(saved){try{return migrate(mergeAdayaRecoveryIntoState(mergeCriticalRecoveryIntoState(restoreDayCachesIntoState(JSON.parse(saved)))))}catch(e){}}
-  const s={seed:SEED,theme:'dark',settings:{timeZone:APP_TIME_ZONE,timeZoneLabel:APP_TIME_ZONE_LABEL},azure:{skills:{},claims:{}},learning:defaultLearningState(),money:SEED.money,days:{},weeklyAnchors:SEED.weeklyAnchors,logs:[],adaya:{skills:{},customSkills:[],weekly:{}}};
-  SEED.azureSkills.forEach(k=>s.azure.skills[k]='Not Started');SEED.resumeClaims.forEach(c=>s.azure.claims[c.claim]=c.status);
-  return migrate(mergeAdayaRecoveryIntoState(mergeCriticalRecoveryIntoState(s)));
-}
-async function hydrateFromIndexedDB(){
-  if(window.__tlccVerifiedImportActive||phaseImportReadPendingMarker())return;
-  const raw=await idbGetRaw();if(!raw)return;
-  const incoming=parseStateRaw(raw);if(!incoming||incomingWouldRollback(incoming,state))return;
-  if(stateAntiRollbackStamp(incoming)>stateAntiRollbackStamp(state)){try{state=mergeStatesNewestWins(state,incoming);inputUpdatedStampCacheReady=false;writeSavedState();render()}catch(e){}}
-}
-async function phaseImportPostReloadVerify(marker=phaseImportReadPendingMarker()){
-  if(!marker?.expected)return false;
-  const expected=phaseImportNormalizeExpectedSignature(marker.expected);
-  marker.expected=expected;
-  const txn=window.__tlccVerifiedImportTxn||{id:marker.transactionId,sourceFilename:marker.sourceFilename||'',selectedRestoreMode:marker.restoreMode,originFingerprint:marker.originFingerprint,expectedIntegritySignature:expected,errors:[],warnings:[]};
-  window.__tlccVerifiedImportTxn=txn;window.__tlccVerifiedImportActive=true;
-  try{
-    phaseImportProgress(txn,'confirming','Confirming the restored state after reload.');
-    const currentOrigin=phaseImportOriginFingerprint(),prior=marker.originFingerprint||{};
-    const namespaceChanged=String(currentOrigin.origin)!==String(prior.origin)||String(currentOrigin.protocol)!==String(prior.protocol)||String(currentOrigin.instanceId)!==String(prior.instanceId);
-    if(namespaceChanged)throw phaseImportError('The backup was written in a different browser document storage area. Open the same HTML file instance or install the app from a stable location before restoring again.','origin_change',{name:'OriginIsolation',message:`Before ${prior.protocol||'?'} / ${prior.origin||'?'}; after ${currentOrigin.protocol||'?'} / ${currentOrigin.origin||'?'}`});
-    let primary=localStorage.getItem(LS_KEY),pObj=null,pSig=null,primaryMatches=false;
-    if(primary){try{pObj=JSON.parse(primary);pSig=phaseImportCanonicalSignature(pObj,primary);primaryMatches=phaseImportSignaturesMatch(pSig,expected)}catch(e){}}
-    const idbRaw=await phaseImportIdbGetVerified();let iObj=null,iSig=null,idbMatches=false;
-    if(idbRaw){try{iObj=JSON.parse(idbRaw);iSig=phaseImportCanonicalSignature(iObj,idbRaw);idbMatches=phaseImportSignaturesMatch(iSig,expected)}catch(e){}}
-    if(!primaryMatches&&!idbMatches){
-      const actual=pSig||iSig||{};
-      throw phaseImportError('Restore did not survive reload: neither authoritative storage copy matched.','reload_authoritative_state',phaseImportMismatchCause(expected,actual,null,pObj||iObj,{fallbackMergeAttempted:!!window.__tlccVerifiedImportFallbackAttempted,dayCalled:!!window.__tlccVerifiedImportDayCalled,primaryPresent:!!primary,indexedDBPresent:!!idbRaw}));
-    }
-    if(!primaryMatches&&idbMatches){
-      primary=idbRaw;pObj=iObj;pSig=iSig;localStorage.setItem(LS_KEY,idbRaw);txn.warnings.push({stage:'reload_localStorage_recovered',message:'Primary browser state was repaired from the verified IndexedDB copy.'});
-      state=phaseImportCanonicalizeStateObject(iObj);
-    }
-    if(primaryMatches&&!idbMatches){
-      await phaseImportIdbPutVerified(primary);const check=await phaseImportIdbGetVerified();const checkObj=JSON.parse(check),checkSig=phaseImportCanonicalSignature(checkObj,check);
-      if(!phaseImportSignaturesMatch(checkSig,expected))throw phaseImportError('Restore did not survive reload: IndexedDB could not be repaired from primary storage.','reload_indexedDB',phaseImportMismatchCause(expected,checkSig,null,checkObj));
-      iObj=checkObj;iSig=checkSig;idbMatches=true;
-    }
-    const activeSig=phaseImportCanonicalSignature(state);
-    if(!phaseImportSignaturesMatch(activeSig,expected))throw phaseImportError('Restore did not become the active state after reload.','reload_active_state',phaseImportMismatchCause(expected,activeSig,pObj,state,{fallbackMergeAttempted:!!window.__tlccVerifiedImportFallbackAttempted,dayCalled:!!window.__tlccVerifiedImportDayCalled,exactCandidateSource:window.__tlccVerifiedImportExactCandidateSource||null}));
-    state=phaseImportCanonicalizeStateObject(state);
-    const raw=primary;phaseImportWriteRecoverySources(raw,state,txn,{includeLastGood:true});
-    state._backupIntegrity=state._backupIntegrity||{};state._backupIntegrity.lastFullSignature=backupIntegritySignature(state,raw);
-    state._backupIntegrity.lastFullSignature.backupType=expected.backupType||'Full / Guarded';
-    state._backupIntegrity.lastFullConfirmedAt=phaseImportNow();state._backupIntegrity.lastFullReason='verified-import-reload';state._backupIntegrity.lastFullWarnings=[];
-    state._backupIntegrity.verifiedImport=Object.assign({},state._backupIntegrity.verifiedImport||{},{verifiedAt:phaseImportNow(),transactionId:marker.transactionId,restoreMode:marker.restoreMode});
-    state._schemaVersion=TLCC_CURRENT_SCHEMA;state.settings=state.settings||{};state.settings.schemaVersion=TLCC_CURRENT_SCHEMA;
-    // A restored backup may remember the heavy Data tab. Land on Today after verification so Android can paint the success state promptly.
-    state.settings.activeTab='today';active='today';
-    const finalRaw=JSON.stringify(stateForStorage(state));
-    localStorage.setItem(LS_KEY,finalRaw);localStorage.setItem(STATE_LAST_GOOD_KEY,finalRaw);phaseImportStorageRemove(localStorage,STATE_BACKUP_KEY);
-    sessionStorage.setItem(STATE_SESSION_KEY,finalRaw);sessionStorage.setItem(STATE_BACKUP_KEY,finalRaw);
-    await phaseImportIdbPutVerified(finalRaw);
-    phaseImportClearPendingMarker();phaseImportClearRollback();window.__tlccVerifiedImportActive=false;window.__tlccVerifiedImportBootPending=null;window.__tlccVerifiedImportEarlyBootProtected=false;
-    txn.reloadVerificationState='verified';txn.completedAt=phaseImportNow();
-    const sig=phaseImportCanonicalSignature(state,finalRaw);
-    render();
-    phaseImportOverlay(`<div class="verifiedImportSuccess"><b>Full backup restored and verified after reload.</b><div style="margin-top:8px">${esc(sig.dayCount)} days · ${esc(sig.oldestDay)} → ${esc(sig.newestDay)}<br>Azure score ${esc(sig.azureScore)} · Adaya ${esc(sig.adayaProgressed)} / ${esc(sig.adayaTotal)}<br>Mode: ${esc(marker.restoreMode)}</div></div><div class="verifiedImportActions"><button class="btn primary" onclick="phaseImportCloseOverlay()">Continue</button></div>`,true);
-    return true;
-  }catch(err){
-    txn.errors=txn.errors||[];txn.errors.push({stage:err?.importStage,message:err?.message,detail:err?.causeDetail||null});
-    phaseImportShowFailure(err,txn,!!phaseImportReadRollback());return false;
-  }
-}
-function phaseImportCandidateWouldBeProtected(){return !!window.__tlccVerifiedImportActive||!!phaseImportReadPendingMarker()}
-const __phaseImportOriginalSave=save;
-save=function(skipSnapshot=false){if(phaseImportCandidateWouldBeProtected())return false;phaseImportMaterializeTransientIfMeaningful();return __phaseImportOriginalSave(skipSnapshot)};
-const __phaseImportOriginalScheduleAutosave=scheduleAutosave;
-scheduleAutosave=function(){if(phaseImportCandidateWouldBeProtected())return;return __phaseImportOriginalScheduleAutosave()};
-const __phaseImportOriginalFlushPendingSaveNow=flushPendingSaveNow;
-flushPendingSaveNow=function(reason='manual'){if(phaseImportCandidateWouldBeProtected()&&reason!=='verified-import')return false;return __phaseImportOriginalFlushPendingSaveNow(reason)};
-const __phaseImportOriginalFlushSecondary=flushSecondaryStorageWrites;
-flushSecondaryStorageWrites=function(){if(phaseImportCandidateWouldBeProtected())return;return __phaseImportOriginalFlushSecondary()};
-const __phaseImportOriginalMergeLatest=mergeLatestSharedStateIfNewer;
-mergeLatestSharedStateIfNewer=function(doRender=false){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalMergeLatest(doRender)};
-const __phaseImportOriginalPromote=promoteLastGoodBackupRaw;
-promoteLastGoodBackupRaw=function(raw,reason='save'){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalPromote(raw,reason)};
-const __phaseImportOriginalWriteCritical=writeCriticalRecoveryState;
-writeCriticalRecoveryState=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalWriteCritical()};
-const __phaseImportOriginalWriteAdaya=writeAdayaRecoveryState;
-writeAdayaRecoveryState=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalWriteAdaya()};
-const __phaseImportOriginalMaybeBackup=maybeAutoBackupDownload;
-maybeAutoBackupDownload=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalMaybeBackup.apply(this,arguments)};
-const __phaseImportOriginalScheduleBackup=scheduleAutoBackupDownload;
-scheduleAutoBackupDownload=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalScheduleBackup.apply(this,arguments)};
-window.runVerifiedImportTransaction=runVerifiedImportTransaction;
-window.phaseImportRollbackNow=phaseImportRollbackNow;
-window.phaseImportCloseOverlay=phaseImportCloseOverlay;
-window.__tlccImportRestoreRepairVersion='verified_import_restore_transaction_repair_v1';
-
-const __phaseImportOriginalWriteSavedState=writeSavedState;
-writeSavedState=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalWriteSavedState.apply(this,arguments)};
-const __phaseImportOriginalWriteCompact=writeCompactSavedRaw;
-writeCompactSavedRaw=function(raw){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalWriteCompact(raw)};
-const __phaseImportOriginalWriteSavedRaw=writeSavedRaw;
-writeSavedRaw=function(raw){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalWriteSavedRaw(raw)};
-const __phaseImportOriginalScheduleSecondary=scheduleSecondaryStorageWrites;
-scheduleSecondaryStorageWrites=function(raw,delay=900){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalScheduleSecondary(raw,delay)};
-const __phaseImportOriginalScheduleDeferred=scheduleDeferredRecoveryWrites;
-scheduleDeferredRecoveryWrites=function(raw){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalScheduleDeferred(raw)};
-const __phaseImportOriginalFlushDeferred=flushDeferredRecoveryWrites;
-flushDeferredRecoveryWrites=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalFlushDeferred()};
-const __phaseImportOriginalImmediateRecovery=writeImmediateTabRecovery;
-writeImmediateTabRecovery=function(raw){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalImmediateRecovery(raw)};
-const __phaseImportOriginalSaveOnExit=saveOnExit;
-saveOnExit=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalSaveOnExit()};
-const __phaseImportOriginalSyncReentry=syncReentryState;
-syncReentryState=function(){if(phaseImportCandidateWouldBeProtected())return null;return __phaseImportOriginalSyncReentry.apply(this,arguments)};
-const __phaseImportOriginalResetGuideTime=resetGuideOnTimeframeChange;
-resetGuideOnTimeframeChange=function(){if(phaseImportCandidateWouldBeProtected())return false;return __phaseImportOriginalResetGuideTime.apply(this,arguments)};
-function phaseImportSyntheticState(opts={}){
-  const base=migrate(deepClone(opts.base||{theme:'dark',settings:{timeZone:APP_TIME_ZONE,timeZoneLabel:APP_TIME_ZONE_LABEL,dayRolloverMode:'after_sleep_4am'},azure:{skills:{},claims:{},proof:defaultAzureProofState()},learning:defaultLearningState(),money:deepClone(SEED.money),days:{},weeklyAnchors:deepClone(SEED.weeklyAnchors),logs:[],adaya:{skills:{},customSkills:[],weekly:{}},faith:defaultFaithProgress()}));
-  if(opts.date){
-    const d=defaultDay();d._logged=d._logged||{};
-    if(opts.meaningful){d.energy=6;d._logged.energy=true;d.notes='meaningful current day';d.inputUpdatedAt='2026-07-18T12:00:00.000Z'}
-    base.days[opts.date]=d;
-  }
-  return base;
-}
-function runImportRestoreRepairTests(reproductionBackup){
-  const rows=[],test=(name,fn)=>{try{const detail=fn();rows.push({name,pass:detail?.pass!==false,detail})}catch(e){rows.push({name,pass:false,error:String(e?.message||e)})}};
-  const src=reproductionBackup||null;
-  test('Exact backup validation',()=>{const v=phaseImportValidateBackupObject(src||{},{}),s=v.signature;return {pass:s.dayCount===42&&s.oldestDay==='2026-05-21'&&s.newestDay==='2026-07-07'&&s.azureScore===71&&s.adayaProgressed===54&&s.sourceRecovery===false,signature:s}});
-  test('Replace candidate stays exact',()=>{const old=state,k=todayKey();state=phaseImportSyntheticState({date:k,meaningful:true});const txn={id:'t',validation:phaseImportValidateBackupObject(src||{},{}),selectedRestoreMode:'replace'};const b=phaseImportBuildCandidate(src,'replace',txn);state=old;return {pass:b.expected.dayCount===42&&b.expected.newestDay==='2026-07-07'&&!b.candidate.days[k],signature:b.expected}});
-  test('Meaningful current day merge',()=>{const old=state,k=todayKey();state=phaseImportSyntheticState({date:k,meaningful:true});const txn={id:'t',validation:phaseImportValidateBackupObject(src||{},{}),selectedRestoreMode:'merge'};const b=phaseImportBuildCandidate(src,'merge',txn);state=old;const backupHas=Object.prototype.hasOwnProperty.call(src?.days||{},k),expectedCount=42+(backupHas?0:1),expectedNewest=k>'2026-07-07'?k:'2026-07-07';return {pass:b.expected.dayCount===expectedCount&&b.expected.newestDay===expectedNewest&&meaningfullyLoggedDay(b.candidate.days[k],k),signature:b.expected}});
-  test('Empty current day is not merged',()=>{const old=state,k=todayKey();state=phaseImportSyntheticState({date:k,meaningful:false});const txn={id:'t',validation:phaseImportValidateBackupObject(src||{},{}),selectedRestoreMode:'merge'};const b=phaseImportBuildCandidate(src,'merge',txn);state=old;return {pass:b.expected.dayCount===42&&!b.candidate.days[k],signature:b.expected}});
-  test('Signature mismatch is detected',()=>{const a=phaseImportSignature(src),b=Object.assign({},a,{adayaProgressed:a.adayaProgressed-1});return {pass:!phaseImportSignaturesMatch(a,b)}});
-  test('Origin namespace change is detectable',()=>{const a={protocol:'content:',origin:'null',instanceId:'a'},b={protocol:'content:',origin:'null',instanceId:'b'};return {pass:String(a.instanceId)!==String(b.instanceId)}});
-  test('Import does not change forecast owner',()=>({pass:typeof peakForecast==='function'&&typeof choosePersonalizedMove==='function'&&typeof phase67AOptimizeCandidates==='function'}));
-  return {phase:'import_restore_transaction_repair_v1',passed:rows.filter(x=>x.pass).length,total:rows.length,allPassed:rows.every(x=>x.pass),tests:rows};
-}
-window.runImportRestoreRepairTests=runImportRestoreRepairTests;
-
-function runPostReloadActiveStateRepairTests(reproductionBackup){
-  const rows=[],test=(name,fn)=>{try{const detail=fn();rows.push({name,pass:detail?.pass!==false,detail})}catch(e){rows.push({name,pass:false,error:String(e?.message||e)})}};
-  const src=reproductionBackup||null;
-  test('Canonical schema normalizes v294 and v297',()=>{const raw=phaseImportCanonicalizeStateObject(src||{});const a=phaseImportCanonicalSignature(Object.assign(deepClone(raw),{_schemaVersion:'v294-phase67B-capacity-budget'})),b=phaseImportCanonicalSignature(Object.assign(deepClone(raw),{_schemaVersion:TLCC_CURRENT_SCHEMA}));return {pass:a.schema===TLCC_CURRENT_SCHEMA&&phaseImportSignaturesMatch(a,b),a:a.schema,b:b.schema}});
-  test('Candidate uses one schema authority',()=>{const old=state;state=phaseImportSyntheticState({date:'2026-07-18',meaningful:false});const txn={id:'repair',validation:phaseImportValidateBackupObject(src||{},{}),selectedRestoreMode:'replace'};const built=phaseImportBuildCandidate(src,'replace',txn);state=old;return {pass:built.candidate._schemaVersion===TLCC_CURRENT_SCHEMA&&built.candidate.settings.schemaVersion===TLCC_CURRENT_SCHEMA&&built.expected.schema===TLCC_CURRENT_SCHEMA,schema:built.expected.schema}});
-  test('Pending exact primary is selected canonically',()=>{const oldGet=localStorage.getItem.bind(localStorage),key=LS_KEY,old=localStorage.getItem(key);try{const obj=phaseImportCanonicalizeStateObject(src||{});obj._schemaVersion='v294-phase67B-capacity-budget';const raw=JSON.stringify(obj),expected=phaseImportCanonicalSignature(obj,raw);localStorage.setItem(key,raw);const exact=phaseImportFindExactSyncCandidate(Object.assign({},expected,{schema:'v294-phase67B-capacity-budget'}));return {pass:!!exact&&Object.keys(exact.days||{}).length===42&&exact._schemaVersion===TLCC_CURRENT_SCHEMA}}finally{if(old===null)localStorage.removeItem(key);else localStorage.setItem(key,old)}});
-  test('Signature mismatch lists changed fields',()=>{const a={dayCount:42,oldestDay:'2026-05-21',newestDay:'2026-07-07',schema:TLCC_CURRENT_SCHEMA},b=Object.assign({},a,{dayCount:43,newestDay:'2026-07-19'}),d=phaseImportSignatureDiff(a,b);return {pass:d.mismatches.some(x=>x.field==='dayCount')&&d.mismatches.some(x=>x.field==='newestDay'),mismatches:d.mismatches}});
-  test('Pending day access remains transient',()=>{const oldState=state,oldActive=window.__tlccVerifiedImportActive,oldTransient=window.__tlccImportTransientDay;try{state=phaseImportCanonicalizeStateObject(src||{});window.__tlccVerifiedImportActive=true;const before=Object.keys(state.days||{}).length;day();const after=Object.keys(state.days||{}).length;return {pass:before===42&&after===42,before,after}}finally{state=oldState;window.__tlccVerifiedImportActive=oldActive;window.__tlccImportTransientDay=oldTransient}});
-  test('Recommendation owners remain available',()=>({pass:typeof choosePersonalizedMove==='function'&&typeof phase67AOptimizeCandidates==='function'&&typeof detectPeakBottlenecks==='function'&&typeof elitePeakMoveFitBreakdown==='function'}));
-  return {phase:'post_reload_active_state_repair_v1',passed:rows.filter(x=>x.pass).length,total:rows.length,allPassed:rows.every(x=>x.pass),tests:rows};
-}
-window.runPostReloadActiveStateRepairTests=runPostReloadActiveStateRepairTests;
-window.__tlccImportRestoreRepairVersion='post_reload_active_state_repair_v1';
-
-setTimeout(()=>{const pending=phaseImportReadPendingMarker();if(pending)phaseImportPostReloadVerify(pending)},0);
 
 </script>
 </body>
