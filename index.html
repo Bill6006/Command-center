@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center Old Index Intelligent Guide Auto Routing Final</title>
+<title>Tyree Life Command Center Old Index Clear Move Confidence Final</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -13305,7 +13305,7 @@ function forecastMoveControls(f,displayMove=null){
   }
   const payloadObj=displayMove?.override ? displayMove.override : currentDisplayedForecastPayload(f);
   if(payloadObj?.terminal || payloadObj?.noLog || payloadObj?.type==='terminal_end_day'){
-    const contextLabel=payloadObj?.feedbackContext==='driving'?'Driving-safe':(payloadObj?.terminal?'End move':'Context fit');
+    const contextLabel=payloadObj?.feedbackContext==='driving'?'Driving-safe':(payloadObj?.terminal?'Pause here':'Context fit');
     return `<div class="chips" style="margin-top:8px"><span class="chip good">${esc(contextLabel)}</span><span class="chip">No log needed</span></div>`;
   }
   const payload=encodeURIComponent(JSON.stringify(payloadObj));
@@ -18360,8 +18360,24 @@ function phase69CapacityLabel(f={}){
   const p=f.capacityBudget||{};
   return p.bandLabel||p.label||p.band||'Low capacity';
 }
+function phase69ConfidenceLevel(f={}){
+  const raw=f.optimizationConfidence||f?.context?.confidenceLabel||'Very little confidence';
+  return String(raw).replace(/\s+confidence$/i,'').trim()||'Very little';
+}
 function phase69ConfidenceLabel(f={}){
-  return f.optimizationConfidence||f?.context?.confidenceLabel||'Very little confidence';
+  return `Move confidence: ${phase69ConfidenceLevel(f)}`;
+}
+function phase69ComparableOutcomeCount(f={}){
+  const direct=Number(f.optimizationSampleCount);
+  if(Number.isFinite(direct)&&direct>=0)return Math.floor(direct);
+  const nested=Number(f.forecastOptimization?.selected?.phase67A?.sampleCount);
+  return Number.isFinite(nested)&&nested>=0?Math.floor(nested):0;
+}
+function phase69ComparableOutcomeText(f={}){
+  const count=phase69ComparableOutcomeCount(f);
+  if(count===0)return 'No comparable outcomes logged yet.';
+  if(count===1)return 'Only 1 comparable outcome logged.';
+  return `${count} comparable outcomes logged.`;
 }
 function phase69ContextSummary(f={}){
   const snap=f?.context?.realLifeContext||phase66BContextSnapshot(state,new Date(),{persist:false});
@@ -18424,8 +18440,8 @@ function phase69WhyDetailsHtml(c,f){
       <div class="phase69DetailRow"><span>Current forecast</span><b>${f.currentForecast??'—'}</b></div><div class="phase69DetailRow"><span>Reachable today</span><b>${f.reachablePeak??'—'}</b></div>
       <div class="phase69DetailRow"><span>North Star</span><b>100</b></div><div class="phase69DetailRow"><span>Expected lift</span><b>${Number.isFinite(Number(band.low))?`+${esc(band.low)} to +${esc(band.high)}`:'Not enough data'}</b></div>
       <div class="phase69DetailRow"><span>Immediate lift</span><b>${phase69FormatLift(est.immediate)}</b></div><div class="phase69DetailRow"><span>Next-window lift</span><b>${phase69FormatLift(est.nextWindow)}</b></div>
-      <div class="phase69DetailRow"><span>Next-morning lift</span><b>${phase69FormatLift(est.nextMorning)}</b></div><div class="phase69DetailRow"><span>Confidence</span><b>${esc(phase69ConfidenceLabel(f))}</b></div>
-      <div class="phase69DetailRow"><span>Qualified samples</span><b>${esc(String(f.optimizationSampleCount||0))}</b></div><div class="phase69DetailRow"><span>Exploration</span><b>${f.explorationStatus?'Safe learning test':'Best-supported option'}</b></div>
+      <div class="phase69DetailRow"><span>Next-morning lift</span><b>${phase69FormatLift(est.nextMorning)}</b></div><div class="phase69DetailRow"><span>Move confidence</span><b>${esc(phase69ConfidenceLevel(f))}</b></div>
+      <div class="phase69DetailRow"><span>Comparable outcomes</span><b>${esc(String(phase69ComparableOutcomeCount(f)))}</b></div><div class="phase69DetailRow"><span>Exploration</span><b>${f.explorationStatus?'Safe learning test':'Best-supported option'}</b></div>
     </div><div class="phase69Note">Forecast 100 remains the North Star. Reachable today is a conservative planning signal, not a promise.</div></div>
     <div class="phase69DetailSection"><div class="phase69DetailHeading">Why this move</div><div class="phase69DetailGrid">
       <div class="phase69DetailRow"><span>Main bottleneck</span><b>${esc(c.mainBottleneck)}</b></div><div class="phase69DetailRow"><span>Best lever</span><b>${esc(c.bestLever)}</b></div>
@@ -18461,7 +18477,7 @@ function phase69ACompactSummaryHtml(c,f,hasSignal=phase69HasForecastSignal(f)){
   const reachable=hasSignal&&f.reachablePeak!==null&&f.reachablePeak!==undefined?f.reachablePeak:'—';
   const expected=phase69AExpectedLiftText(f,hasSignal);
   const capacity=phase69ACapacitySummaryText(f),confidence=phase69ConfidenceLabel(f);
-  return `<div class="phase69CompactSummary phase69ACompactSummary" data-phase69a-summary="true"><div class="phase69ASummaryLine phase69AForecastLine"><span>Current <b>${esc(current)}</b></span><span class="phase69ASep">·</span><span>Reachable <b>${esc(reachable)}</b></span><span class="phase69ASep">·</span><span>Expected${expected==='Not enough data'?':':''} <b>${esc(expected)}</b></span></div><div class="phase69ASummaryLine phase69ACapacityLine"><b>${esc(capacity)}</b><span class="phase69ASep">·</span><span>${esc(confidence)}</span></div></div>`;
+  return `<div class="phase69CompactSummary phase69ACompactSummary" data-phase69a-summary="true"><div class="phase69ASummaryLine phase69AForecastLine"><span>Current <b>${esc(current)}</b></span><span class="phase69ASep">·</span><span>Reachable <b>${esc(reachable)}</b></span><span class="phase69ASep">·</span><span>Expected${expected==='Not enough data'?':':''} <b>${esc(expected)}</b></span></div><div class="phase69ASummaryLine phase69ACapacityLine"><b>${esc(capacity)}</b><span class="phase69ASep">·</span><span>${esc(confidence)}</span></div><div class="phase69ASummaryLine phase69AComparableLine"><span>${esc(phase69ComparableOutcomeText(f))}</span></div></div>`;
 }
 function phase69RenderCommandCard(quick=false){
   const c=buildTodayCommand(),f=c.forecast,displayMove=c.displayMove,hasSignal=phase69HasForecastSignal(f),context=phase69ContextSummary(f),reason=hasSignal&&c.mainBottleneck!=='Not enough data'?`${c.mainBottleneck}: ${c.bestLever}`:'';
