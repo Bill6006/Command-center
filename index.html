@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center Old Index Reliability Restored Final</title>
+<title>Tyree Life Command Center Old Index Reliability Restored Responsive Final</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -575,6 +575,95 @@ input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(-
 .phase70DExportButtons .btn{min-height:44px}
 @media(max-width:520px){.phase70DDiagnosticGrid{grid-template-columns:1fr}.phase70DRecoveryRow{display:grid;grid-template-columns:1fr;gap:3px}.phase70DRecoveryRow span{text-align:left}.phase70DTaskStatus{padding:9px}.phase70DDiagnosticSlot{padding:8px}}
 </style>
+
+<style id="phase70G-android-visual-viewport-fit">
+/* Phase 70G: Data tab follows the Android visual viewport during browser zoom. */
+:root{
+  --tlcc-visual-viewport-width:100vw;
+  --tlcc-data-horizontal-padding:28px;
+}
+
+@media (max-width:760px){
+  #sec-data.section.active{
+    width:min(100%,max(240px,calc(var(--tlcc-visual-viewport-width) - var(--tlcc-data-horizontal-padding))));
+    max-width:min(100%,max(240px,calc(var(--tlcc-visual-viewport-width) - var(--tlcc-data-horizontal-padding))));
+    min-width:0;
+    margin-right:auto;
+  }
+
+  #sec-data,
+  #sec-data .phase70DDataGrid,
+  #sec-data .grid,
+  #sec-data .grid > *,
+  #sec-data .card,
+  #sec-data .stack,
+  #sec-data .row,
+  #sec-data .quote,
+  #sec-data .storageStatus,
+  #sec-data .exportProgressBox,
+  #sec-data .backupHealth,
+  #sec-data .backupHealthGrid,
+  #sec-data .backupHealthItem,
+  #sec-data .field,
+  #sec-data .timeTextWrap,
+  #sec-data .timeTextRow,
+  #sec-data input,
+  #sec-data select,
+  #sec-data textarea{
+    min-width:0;
+    max-width:100%;
+  }
+
+  #sec-data .phase70DDataGrid,
+  #sec-data .grid{
+    width:100%;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+  }
+
+  #sec-data .card{
+    width:100%;
+    overflow-x:clip;
+  }
+
+  #sec-data .backupHealthGrid{
+    grid-template-columns:1fr;
+  }
+
+  #sec-data .row,
+  #sec-data .exportProgressMeta{
+    flex-wrap:wrap;
+  }
+
+  #sec-data p,
+  #sec-data .tiny,
+  #sec-data .muted,
+  #sec-data .quote,
+  #sec-data label,
+  #sec-data h2,
+  #sec-data h3,
+  #sec-data b,
+  #sec-data span{
+    overflow-wrap:anywhere;
+    word-break:normal;
+  }
+
+  #sec-data input,
+  #sec-data select,
+  #sec-data textarea,
+  #sec-data button{
+    width:100%;
+  }
+
+  #sec-data .chips button,
+  #sec-data .row button,
+  #sec-data .btn.small{
+    width:auto;
+    max-width:100%;
+    white-space:normal;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app" data-theme="dark" id="app">
@@ -19223,5 +19312,56 @@ window.__tlccPhase70DArtifact={version:'phase70D-old-index-data-startup-stabilit
 </script>
 
 <!-- PHASE 70E FINAL ACCEPTANCE ARTIFACT: old-index reliability restoration; no feature redesign. -->
+
+<script id="phase70G-android-visual-viewport-fit-script">
+(function phase70GInstallVisualViewportFit(){
+  if(window.__phase70GVisualViewportFitInstalled) return;
+  window.__phase70GVisualViewportFitInstalled=true;
+
+  function syncVisualViewportWidth(){
+    try{
+      const vv=window.visualViewport;
+      const layoutWidth=Math.max(
+        240,
+        Number(document.documentElement?.clientWidth||0),
+        Number(window.innerWidth||0)
+      );
+      const visualWidth=Math.max(
+        240,
+        Math.floor(Number(vv?.width||layoutWidth))
+      );
+      document.documentElement.style.setProperty(
+        '--tlcc-visual-viewport-width',
+        visualWidth+'px'
+      );
+      document.documentElement.dataset.visualViewportScale=
+        String(Number(vv?.scale||1).toFixed(3));
+      document.documentElement.classList.toggle(
+        'tlccVisualViewportNarrower',
+        visualWidth+1<layoutWidth
+      );
+    }catch(error){
+      console.warn('Phase 70G visual viewport fit could not update.',error);
+    }
+  }
+
+  syncVisualViewportWidth();
+  window.addEventListener('resize',syncVisualViewportWidth,{passive:true});
+  window.addEventListener('orientationchange',syncVisualViewportWidth,{passive:true});
+
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',syncVisualViewportWidth,{passive:true});
+    window.visualViewport.addEventListener('scroll',syncVisualViewportWidth,{passive:true});
+  }
+
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) syncVisualViewportWidth();
+  },{passive:true});
+
+  window.setTimeout(syncVisualViewportWidth,0);
+  window.setTimeout(syncVisualViewportWidth,250);
+})();
+</script>
+
 </body>
 </html>
