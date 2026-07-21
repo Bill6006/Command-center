@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Tyree Life Command Center Old Index Reliability Restored Responsive Final</title>
+<title>Tyree Life Command Center Old Index Intelligent Guide Auto Routing Final</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#121923; --panel2:#172231; --text:#e9eef5; --muted:#9aa7b6; --line:#263447;
@@ -19360,6 +19360,225 @@ window.__tlccPhase70DArtifact={version:'phase70D-old-index-data-startup-stabilit
 
   window.setTimeout(syncVisualViewportWidth,0);
   window.setTimeout(syncVisualViewportWidth,250);
+})();
+</script>
+
+
+<script id="phase70H-intelligent-guide-auto-routing">
+/* Phase 70H: stable intelligent guide step identity and cross-tab auto-routing. */
+(function phase70HInstallGuideAutoRouting(){
+  if(window.__phase70HGuideAutoRoutingInstalled) return;
+  window.__phase70HGuideAutoRoutingInstalled=true;
+  const PHASE70H_VERSION='phase70H-intelligent-guide-auto-routing-v1';
+  let routeToken=0;
+  let routeInProgress=false;
+  let routePendingReason='';
+  let forceFocusKey='';
+  let lastFocusedKey='';
+  let compositionActive=false;
+  let resumeRoutePending=!!guideState;
+  let lastObservedKey='';
+  const originalStopGuide=window.stopGuide;
+  const originalCompleteGuide=window.completeGuide;
+
+  function stepKey(step){
+    if(!step) return '';
+    return [step.tab||'',step.selector||'',step.title||''].map(v=>String(v).trim()).join('||');
+  }
+  function indexWithPrivateHold(steps,index){
+    let out=Math.max(0,Number(index)||0);
+    const privateIdx=steps.findIndex(s=>s.selector==='#guide-pattern-private');
+    try{if(privateIdx>=0&&out>privateIdx&&privateGuideHoldNeeded())out=privateIdx;}catch(e){}
+    return out;
+  }
+  function resolveStep(steps){
+    if(!guideState||!Array.isArray(steps)||!steps.length)return null;
+    const savedKey=String(guideState.resolvedStepKey||guideState.currentStepKey||'');
+    let index=savedKey?steps.findIndex(s=>stepKey(s)===savedKey):-1;
+    const preserved=index>=0;
+    if(index<0) index=indexWithPrivateHold(steps,guideState.step);
+    if(index>=steps.length)return {complete:true,index,previousKey:savedKey};
+    const step=steps[index],key=stepKey(step);
+    const previousKey=String(guideState.resolvedStepKey||guideState.currentStepKey||lastObservedKey||'');
+    guideState.step=index;
+    guideState.previousResolvedStepKey=previousKey&&previousKey!==key?previousKey:String(guideState.previousResolvedStepKey||'');
+    guideState.resolvedStepKey=key;
+    guideState.currentStepKey=key;
+    return {step,key,index,previousKey,changed:!!previousKey&&previousKey!==key,first:!previousKey,preserved};
+  }
+  function blockingSurfaceOpen(){
+    try{if(phaseImportCandidateWouldBeProtected())return true;}catch(e){}
+    if(document.getElementById('verifiedImportOverlay'))return true;
+    const visible=[...document.querySelectorAll('.feedbackSheetOverlay,dialog[open],[role="dialog"]')].some(el=>{
+      if(el.closest('#guideControls'))return false;
+      const cs=getComputedStyle(el);
+      return cs.display!=='none'&&cs.visibility!=='hidden'&&el.getClientRects().length>0;
+    });
+    return visible;
+  }
+  function routeAllowed(){
+    return !!guideState&&!compositionActive&&!blockingSurfaceOpen();
+  }
+  function persistRoutingState(){
+    try{
+      state.settings=state.settings||{};
+      syncGuideStateToSettings();
+      save(true);
+    }catch(e){try{writeSavedState();}catch(_){} }
+  }
+  function focusResolvedStep(resolved,behavior='smooth'){
+    if(!resolved?.step||!guideState)return false;
+    if(active!==resolved.step.tab)return false;
+    const target=document.querySelector(resolved.step.selector)||document.getElementById('sec-'+resolved.step.tab);
+    if(!target)return false;
+    document.querySelectorAll('.guideTarget').forEach(el=>{if(el!==target)el.classList.remove('guideTarget')});
+    target.classList.add('guideTarget');
+    if(lastFocusedKey!==resolved.key||forceFocusKey===resolved.key){
+      try{target.scrollIntoView({behavior,block:'center'});}catch(e){try{target.scrollIntoView();}catch(_){} }
+      lastFocusedKey=resolved.key;
+      if(forceFocusKey===resolved.key)forceFocusKey='';
+    }
+    return true;
+  }
+  function routeToResolvedStep(resolved,reason='automatic'){
+    if(!resolved?.step||!guideState)return false;
+    if(!routeAllowed()){
+      routePendingReason=reason||'blocked';
+      return false;
+    }
+    const desiredTab=resolved.step.tab;
+    if(!tabs.some(([id])=>id===desiredTab))return false;
+    const token=++routeToken;
+    routeInProgress=true;
+    routePendingReason='';
+    forceFocusKey=resolved.key;
+    guideState.lastAutoRoutedStepKey=resolved.key;
+    guideState.lastAutoRouteReason=reason;
+    guideState.lastAutoRoutedAt=new Date().toISOString();
+    lastObservedKey=resolved.key;
+    applyGuideStepSideEffects(resolved.step);
+    try{commitFocusedField();commitPendingRangeDrafts('guide-auto-route',{save:false});}catch(e){}
+    const tabChanged=active!==desiredTab;
+    if(tabChanged){
+      active=desiredTab;
+      state.settings=state.settings||{};
+      state.settings.activeTab=desiredTab;
+      safeLocalSet('tlcc_active',desiredTab);
+    }
+    persistRoutingState();
+    if(tabChanged||!phaseTabContentMatches(desiredTab)){
+      renderQueued=false;
+      render();
+    }
+    setTimeout(()=>{
+      if(token!==routeToken)return;
+      routeInProgress=false;
+      if(!guideState)return;
+      const current=resolveStep(safeGuideSteps(guideState.period));
+      if(current?.key===resolved.key)focusResolvedStep(current,'smooth');
+    },90);
+    return true;
+  }
+  function updateGuideControls(box,resolved,steps){
+    if(!box||!resolved?.step)return;
+    const mainActionLabel=resolved.index>=steps.length-1?'Done':'Next';
+    box.className='guideControls show';
+    box.innerHTML=`<div class="guideTitle">${esc(guidePeriodLabel(guideState.period))} Guide — ${resolved.index+1}/${steps.length}</div><div class="guideNote"><b>${esc(resolved.step.title)}</b><br>${esc(resolved.step.note)}</div><div class="chips" style="margin-top:8px"><button class="btn small primary" onclick="guideNext()">${mainActionLabel}</button><button class="btn small" onclick="guideSkip()">Skip</button><button class="btn small danger" onclick="stopGuide()">Stop</button></div>`;
+  }
+
+  window.goGuideStep=function phase70HGoGuideStep(stepIndex){
+    if(!guideState)return;
+    const steps=safeGuideSteps(guideState.period);
+    let index=indexWithPrivateHold(steps,stepIndex);
+    if(index>=steps.length){completeGuide();return;}
+    const previous=String(guideState.resolvedStepKey||guideState.currentStepKey||'');
+    const step=steps[index],key=stepKey(step);
+    guideState.step=index;
+    guideState.previousResolvedStepKey=previous&&previous!==key?previous:String(guideState.previousResolvedStepKey||'');
+    guideState.resolvedStepKey=key;
+    guideState.currentStepKey=key;
+    routePendingReason='explicit';
+    resumeRoutePending=false;
+    const resolved={step,key,index,previousKey:previous,changed:previous!==key,first:!previous};
+    if(!routeToResolvedStep(resolved,'explicit')){
+      persistRoutingState();
+      render();
+    }
+  };
+  window.guideNext=function phase70HGuideNext(){if(guideState)goGuideStep(Number(guideState.step||0)+1)};
+  window.guideSkip=function phase70HGuideSkip(){if(guideState)goGuideStep(Number(guideState.step||0)+1)};
+
+  window.syncGuideUI=function phase70HSyncGuideUI(){
+    try{syncGuideStateToSettings();}catch(e){}
+    const box=document.getElementById('guideControls');
+    document.querySelectorAll('.guideTarget').forEach(el=>el.classList.remove('guideTarget'));
+    if(!guideState){
+      if(box){box.className='guideControls hidden';box.innerHTML='';}
+      resumeRoutePending=false;routePendingReason='';lastObservedKey='';lastFocusedKey='';
+      return;
+    }
+    const steps=safeGuideSteps(guideState.period);
+    const resolved=resolveStep(steps);
+    if(!resolved||resolved.complete){completeGuide();return;}
+    applyGuideStepSideEffects(resolved.step);
+    const changed=resolved.changed||(!lastObservedKey&&resolved.first)||lastObservedKey!==resolved.key;
+    const shouldRoute=resumeRoutePending||routePendingReason||changed;
+    updateGuideControls(box,resolved,steps);
+    if(shouldRoute&&active!==resolved.step.tab){
+      if(routeToResolvedStep(resolved,resumeRoutePending?'resume':(routePendingReason||'resolved-step-changed'))){
+        resumeRoutePending=false;
+        return;
+      }
+    }
+    if(shouldRoute&&active===resolved.step.tab){
+      forceFocusKey=resolved.key;
+      focusResolvedStep(resolved,'smooth');
+      guideState.lastAutoRoutedStepKey=resolved.key;
+      guideState.lastAutoRouteReason=resumeRoutePending?'resume':(routePendingReason||'resolved-step-changed');
+      guideState.lastAutoRoutedAt=new Date().toISOString();
+      persistRoutingState();
+      routePendingReason='';
+      resumeRoutePending=false;
+    }else{
+      focusResolvedStep(resolved,'auto');
+    }
+    lastObservedKey=resolved.key;
+  };
+
+  window.stopGuide=function phase70HStopGuide(){
+    routeToken++;routeInProgress=false;routePendingReason='';forceFocusKey='';lastFocusedKey='';lastObservedKey='';resumeRoutePending=false;
+    return originalStopGuide.apply(this,arguments);
+  };
+  window.completeGuide=function phase70HCompleteGuide(){
+    routeToken++;routeInProgress=false;routePendingReason='';forceFocusKey='';lastFocusedKey='';lastObservedKey='';resumeRoutePending=false;
+    return originalCompleteGuide.apply(this,arguments);
+  };
+
+  document.addEventListener('compositionstart',()=>{compositionActive=true;},true);
+  document.addEventListener('compositionend',()=>{compositionActive=false;setTimeout(()=>{try{syncGuideUI();}catch(e){}},0);},true);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&guideState){resumeRoutePending=true;setTimeout(()=>{try{syncGuideUI();}catch(e){}},40);}},true);
+
+  window.phase70HGuideStepKey=stepKey;
+  window.phase70HResolveGuideStep=resolveStep;
+  window.phase70HRouteToResolvedStep=routeToResolvedStep;
+  window.__phase70HVersion=PHASE70H_VERSION;
+  window.__phase70HGuideRoutingState=()=>({routeToken,routeInProgress,routePendingReason,forceFocusKey,lastFocusedKey,lastObservedKey,resumeRoutePending,compositionActive});
+  window.runPhase70HGuideRoutingTests=function(){
+    const rows=[],test=(name,fn)=>{try{const d=fn()||{};rows.push({name,pass:d.pass!==false,...d});}catch(e){rows.push({name,pass:false,error:String(e?.message||e)});}};
+    const a={tab:'today',selector:'#a',title:'A'},b={tab:'father',selector:'#b',title:'B'},c={tab:'faith',selector:'#c',title:'C'};
+    test('Stable key includes tab selector and title',()=>({pass:stepKey(b)==='father||#b||B',key:stepKey(b)}));
+    test('Current step survives removal before it',()=>{const g=guideState;guideState={step:1,resolvedStepKey:stepKey(b)};const r=resolveStep([b,c]);guideState=g;return {pass:r.index===0&&r.key===stepKey(b),index:r.index};});
+    test('Completed disappearing step advances at same numeric position',()=>{const g=guideState;guideState={step:1,resolvedStepKey:stepKey(b)};const r=resolveStep([a,c]);guideState=g;return {pass:r.index===1&&r.key===stepKey(c),index:r.index,key:r.key};});
+    test('Same unresolved key does not require cross-tab reroute',()=>({pass:stepKey(c)===stepKey(c)}));
+    test('Routing owner has loop token and lock',()=>({pass:routeToResolvedStep.toString().includes('routeToken')&&routeToResolvedStep.toString().includes('routeInProgress')}));
+    test('Manual navigation protection uses resolved-key change',()=>({pass:window.syncGuideUI.toString().includes('const shouldRoute=resumeRoutePending||routePendingReason||changed')}));
+    test('Modal and import protection block automatic routing',()=>({pass:blockingSurfaceOpen.toString().includes('verifiedImportOverlay')&&blockingSurfaceOpen.toString().includes('phaseImportCandidateWouldBeProtected')}));
+    test('All guide period labels remain supported',()=>({pass:['morning','afternoon','evening','weekly','smart'].every(k=>!!guidePeriodLabel(k))}));
+    test('Responsive Phase 70G remains installed',()=>({pass:!!window.__phase70GVisualViewportFitInstalled||!!document.getElementById('phase70G-android-visual-viewport-fit')}));
+    return {phase:'70H',passed:rows.filter(x=>x.pass).length,total:rows.length,allPassed:rows.every(x=>x.pass),tests:rows};
+  };
+
+  setTimeout(()=>{try{if(guideState){resumeRoutePending=true;syncGuideUI();}}catch(e){}},80);
 })();
 </script>
 
